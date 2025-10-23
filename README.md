@@ -1,16 +1,82 @@
-# React + Vite
+# LaviumHub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern laundry management system built with React that provides real-time monitoring of washing machines and dryers.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Real-time machine status monitoring
+- Responsive design for all devices
+- Automated status updates every 3 minutes
+- Interactive UI with hover effects
+- Mobile-friendly interface
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 18
+- Vite
+- Mantine UI
+- Day.js
+- React Icons
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/laviumhub.git
+cd laviumhub
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Start development server:
+```bash
+npm run dev
+```
+
+4. Build for production:
+```bash
+npm run build
+```
+
+## Environment Variables
+
+Create a `.env` file in the root directory:
+
+```env
+VITE_API_URL=your_api_url
+VITE_API_KEY=your_api_key
+```
+
+## Project Structure
+
+```
+laviumhub/
+├── src/
+│   ├── assets/      # Images and static files
+│   ├── components/  # React components
+│   ├── App.jsx     # Main application component
+│   └── main.jsx    # Application entry point
+├── public/         # Public assets
+└── index.html     # HTML template
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Contact
+
+- Website: [LaviumHub](https://d-agung.com/laviumhub)
+- WhatsApp: [085117674118](https://wa.me/6285117674118)
+- Instagram: [@laviumhub](https://www.instagram.com/laviumhub)
