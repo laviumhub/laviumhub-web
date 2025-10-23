@@ -1,0 +1,34 @@
+{
+  "name": "laviumhub",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "author": "laviumhub team",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@mantine/core": "^8.3.5",
+    "@mantine/hooks": "^8.3.5",
+    "@mantine/notifications": "^8.3.5",
+    "@tabler/icons-react": "^3.35.0",
+    "dayjs": "^1.11.18",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.38.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "eslint": "^9.38.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.4.0",
+    "vite": "^7.1.11"
+  }
+}
