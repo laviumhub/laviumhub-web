@@ -1,0 +1,69 @@
+[
+  {
+    "id": "nyuri",
+    "title": "Nyuci Sendiri",
+    "badge": "NYURI",
+    "headline": "💧 Bebas, hemat, dan cepat!",
+    "description": "Cocok buat kamu yang ingin mencuci sendiri tanpa antre. Cukup datang, pilih mesin, dan mulai mencuci.",
+    "blockquote": {
+      "line1": "<b>Tidak</b> termasuk sabun & pewangi.",
+      "line2": "Kapasitas hingga <b>8 kg</b>."
+    },
+    "footer": "🕒 Atur waktu dan hasil cucimu sendiri.",
+    "images": [
+      "services/nyuri_1.jpeg",
+      "services/nyuri_2.jpeg",
+      "services/nyuri_3.jpeg"
+    ]
+  },
+  {
+    "id": "nyopet",
+    "title": "Nyoeroeh Petoegas",
+    "badge": "NYOPET",
+    "headline": "🙌 Titip, tinggal, beres!",
+    "description": "Berikan pakaian, sabun, dan pewangi favoritmu. Biar petugas kami yang mencucikan dan mengeringkan.",
+    "blockquote": {
+      "line1": "<b>Tidak</b> termasuk sabun & pewangi.",
+      "line2": "Kapasitas hingga <b>8 kg</b>."
+    },
+    "footer": "🚀 Solusi praktis tanpa harus nunggu lama.",
+    "images": [
+      "services/nyopet_1.jpeg",
+      "services/nyopet_2.jpeg",
+      "services/nyopet_3.jpeg"
+    ]
+  },
+  {
+    "id": "nyelip",
+    "title": "Nyeuci + Lipat",
+    "badge": "NYELIP",
+    "headline": "🧼 Cuci, kering, lipat — langsung wangi!",
+    "description": "Layanan terima beres buat kamu yang pengen semuanya praktis. Sudah termasuk deterjen & pewangi premium, plus dilipat rapi siap masuk lemari.",
+    "blockquote": {
+      "line1": "Dihitung <b>per kilo</b>."
+    },
+    "footer": "✨ Cucian bersih, rapi, dan wangi tanpa repot.",
+    "images": [
+      "services/nyelip_1.jpeg",
+      "services/nyelip_2.jpeg",
+      "services/nyelip_3.jpeg",
+      "services/nyelip_4.jpeg"
+    ]
+  },
+  {
+    "id": "nyesat",
+    "title": "Nyeuci Satuan",
+    "badge": "NYESAT",
+    "headline": "👕 Perawatan ekstra untuk pakaian spesial!",
+    "description": "Layanan premium harga minimum cocok untuk item tertentu seperti bed cover, sprei, handuk, dan lainnya. Setiap item dirawat dan dikemas dengan rapi satu per satu.",
+    "blockquote": {
+      "line1": "Dihitung <b>per item</b>."
+    },
+    "footer": "💎 Karena pakaian spesial butuh perhatian lebih.",
+    "images": [
+      "services/nyesat_1.jpeg",
+      "services/nyesat_2.jpeg",
+      "services/nyesat_3.jpeg"
+    ]
+  }
+]
