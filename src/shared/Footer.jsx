@@ -1,5 +1,5 @@
 import { Box, Container, Grid, Group, Image, Stack, Text } from '@mantine/core'
-import { IconBrandInstagram, IconBrandWhatsapp } from "@tabler/icons-react"
+import { IconBrandFacebook, IconBrandInstagram, IconBrandTiktok, IconBrandWhatsapp, IconMapPin, IconPin, IconPinned } from "@tabler/icons-react"
 import laviumLogo from "../assets/lavium-logo.png"
 
 const Footer = () => {
@@ -24,16 +24,32 @@ const Footer = () => {
                   <IconBrandWhatsapp />
                   <Text>085117674118</Text>
                 </Group>
-                <Group
-                  onClick={()=> window.open("https://www.instagram.com/laviumhub", "_blank")}
-                  style={{cursor: 'pointer'}}
-                >
-                  <IconBrandInstagram />
-                  <Text>laviumhub</Text>
+                <Group >
+                  <Group
+                    onClick={()=> window.open("https://www.instagram.com/laviumhub", "_blank")}
+                    style={{cursor: 'pointer'}}
+                  >
+                    <IconBrandInstagram />
+                  </Group> |
+                  <Group
+                    onClick={()=> window.open("https://tiktok.com/@laviumhub", "_blank")}
+                    style={{cursor: 'pointer'}}
+                  >
+                    <IconBrandTiktok />
+                  </Group> |
+                  <Group
+                    onClick={()=> window.open("https://www.facebook.com/profile.php?id=61582385467564", "_blank")}
+                    style={{cursor: 'pointer'}}
+                  >
+                    <IconBrandFacebook />
+                  </Group>
                 </Group>
+                <Group>
+                  <IconMapPin />
                 <Text size="md" c="white" opacity={0.95} ta="center">
                   Jl. Kramat Sentiong No 14, Senen, Jakarta Pusat
                 </Text>
+                </Group>
                 <Text size="md" mt={4} c="white" fw={600} ta="center">
                   <strong>Buka:</strong> Selasa–Minggu 06.00–23.00 | Senin 16.30–23.00
                 </Text>
