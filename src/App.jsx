@@ -14,6 +14,7 @@ import {
   Tooltip
 } from "@mantine/core"
 import { useMediaQuery } from "@mantine/hooks"
+import { notifications } from "@mantine/notifications"
 import { IconInfoCircle } from "@tabler/icons-react"
 import dayjs from "dayjs"
 import 'dayjs/locale/id'
@@ -40,18 +41,23 @@ export default function App() {
   const available = machines.filter((m) => m.state === "MATI").length
 
   const handleInfoClick = () => {
-    alert('Data akan diperbarui setiap 3 menit')
+    notifications.show({
+      title: 'Informasi',
+      message: 'Data akan diperbarui setiap 3 menit',
+      loading: false,
+      autoClose: 2000,
+    })
   }
 
   const fetchData = async () => {
     try {
-      const res = await fetch('https://d-agung.com/scrapper/scrapper.php?key=8c14c1035d8cdbe9c69270820d7bb08d0de9dc01d8d05b3dc6bd58b47bee20a0');
-      const data = await res.json();
-      setMachines(data.data);
-      setLastUpdate(dayjs(data.timestamp).format('DD MMMM YYYY HH:mm:ss'));
+      const res = await fetch('https://d-agung.com/scrapper/scrapper.php?key=8c14c1035d8cdbe9c69270820d7bb08d0de9dc01d8d05b3dc6bd58b47bee20a0')
+      const data = await res.json()
+      setMachines(data.data)
+      setLastUpdate(dayjs(data.timestamp).format('DD MMMM YYYY HH:mm:ss'))
     } catch (err) {
-      console.error(err);
-      setMachines(default_machines);
+      console.error(err)
+      setMachines(default_machines)
     }
   }
 

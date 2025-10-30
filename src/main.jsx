@@ -1,10 +1,13 @@
 import { MantineProvider, createTheme } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { Notifications } from '@mantine/notifications';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-// ‼️ import carousel styles after core package styles
+
+// ‼️ import these styles after core package styles
 import '@mantine/carousel/styles.css';
+import '@mantine/notifications/styles.css';
 
 const theme = createTheme({
   colors: {
@@ -20,6 +23,7 @@ const theme = createTheme({
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <MantineProvider theme={theme}>
+      <Notifications position='top-right' />
       <App />
     </MantineProvider>
   </React.StrictMode>
