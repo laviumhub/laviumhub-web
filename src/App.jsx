@@ -379,7 +379,7 @@ export default function App() {
                       }}
                     >
                       <Text ta="center" fw={700} size="xl" py="md">
-                        Empat gaya nyuci, satu tempat yang bisa kamu percaya.
+                        Lima gaya nyuci, satu tempat yang bisa kamu percaya.
                       </Text>
                       <Text ta="center" size="lg" c="dimmed" py="lg">
                         LaviumHub hadir untuk semua kebutuhan laundry — dari yang mandiri sampai yang butuh perhatian ekstra.
