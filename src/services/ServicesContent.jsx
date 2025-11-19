@@ -1,5 +1,5 @@
 import { Carousel } from "@mantine/carousel"
-import { Badge, Blockquote, Card, Grid, GridCol, Group, Image, Text, Title } from "@mantine/core"
+import { Badge, Blockquote, Card, Grid, GridCol, Group, Image, Stack, Text, Title } from "@mantine/core"
 import Autoplay from 'embla-carousel-autoplay'
 import { useRef } from "react"
 import SERVICES_DATA from "../data/SERVICES_DATA.json"
@@ -82,25 +82,44 @@ export default function ServicesContent() {
         <Title>
           Tambahan:
         </Title>
-        <Card shadow="sm" padding="lg">
-          <Group justify="space-between">
-            <Text fw={500} size="lg" mt="md">
-              🧺 Pisah Baju Putih / Bernoda
+        <Stack gap='sm'>
+          <Card shadow="sm" padding="lg">
+            <Group justify="space-between">
+              <Text fw={500} size="lg" mt="md">
+                🧺 Pisah Baju Putih / Bernoda
+              </Text>
+              <Badge size="lg" color="gray">WHITE</Badge>
+            </Group>
+
+            <Text size="sm" mt="xs">
+              ✨ Layanan khusus untuk menjaga pakaian putihmu tetap cerah tanpa khawatir luntur!  
+              Kami pisahkan proses pencucian agar baju putih dan bernoda mendapat perawatan ekstra, hasilnya lebih bersih, aman, dan wangi tahan lama.
             </Text>
-            <Badge size="lg" color="gray">WHITE</Badge>
-          </Group>
 
-          <Text size="sm" mt="xs">
-            ✨ Layanan khusus untuk menjaga pakaian putihmu tetap cerah tanpa khawatir luntur!  
-            Kami pisahkan proses pencucian agar baju putih dan bernoda mendapat perawatan ekstra, hasilnya lebih bersih, aman, dan wangi tahan lama.
-          </Text>
+            <Blockquote my="xs" py="xs">
+              🔸 Khusus layanan <b>NYELIP.</b><br/>
+              ⚖️ Berat maksimal: <b>0 – 3 kg.</b>
+            </Blockquote>
+          </Card>
+          <Card shadow="sm" padding="lg">
+            <Group justify="space-between">
+              <Text fw={500} size="lg" mt="md">
+                👔 Jasa Setrika Aja
+              </Text>
+              <Badge size="lg" color="gray">Setrika</Badge>
+            </Group>
 
-          <Blockquote my="xs" py="xs">
-            🔸 Khusus layanan <b>NYELIP.</b><br/>
-            ⚖️ Berat maksimal: <b>0 – 3 kg.</b>
-          </Blockquote>
-            
-        </Card>
+            <Text size="sm" mt="xs">
+              🔥 Layanan simpel buat kamu yang cuma butuh bajunya disetrika.
+              Pakaian jadi rapi, halus, dan siap pakai tanpa ribet.
+            </Text>
+
+            <Blockquote my="xs" py="xs">
+              🔸 Dihitung <b>per kilo.</b><br/>
+              ⚖️ 1 atau 2 pcs dianggap <b>1 kg.</b>
+            </Blockquote>
+          </Card>
+        </Stack>
       </GridCol>
     </Grid>
   )

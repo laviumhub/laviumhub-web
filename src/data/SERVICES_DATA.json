@@ -67,5 +67,19 @@
       "services/nyesat_3.jpeg",
       "services/nyesat_4.jpeg"
     ]
+  },
+  {
+    "id": "nyogok",
+    "title": "Nyoeci Gosok",
+    "badge": "NYOGOK",
+    "headline": "🔥 Rapi, mulus, dan anget pol — siap pakai.",
+    "description": "Combo cuci + gosok buat kamu yang ingin hasil akhir wangi, rapi, dan siap pakai tanpa ribet. Pergi ke kantor jadi makin Pe-De.",
+    "blockquote": {
+      "line1": "Dihitung <b>per kilo</b>."
+    },
+    "footer": "💎 Baju mulus, wangi, dan langsung siap dipakai.",
+    "images": [
+      "services/nyogok_1.jpeg"
+    ]
   }
 ]
