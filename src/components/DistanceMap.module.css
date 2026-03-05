@@ -1,0 +1,19 @@
+.wrap {
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.map {
+  height: 430px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .wrap {
+    border-radius: 14px;
+  }
+
+  .map {
+    height: 360px;
+  }
+}

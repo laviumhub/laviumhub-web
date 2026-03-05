@@ -1,0 +1,189 @@
+.page {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.langToggle {
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.formCard {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+}
+
+.routeForm {
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.fieldsStack {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.fieldCard {
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.originRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coordInput,
+.destInput {
+  width: 100%;
+  min-width: 0;
+}
+
+.modeToggle {
+  display: inline-flex;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 12px;
+  width: fit-content;
+  background: #fff;
+}
+
+.summary {
+  display: grid;
+  gap: 6px;
+}
+
+.presetSection {
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  padding-top: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.presetTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.presetList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.presetButton {
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+  cursor: pointer;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.presetCoords {
+  opacity: 0.72;
+  font-size: 12px;
+}
+
+.pricingCard {
+  margin-top: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.tierList {
+  display: grid;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.tierItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .headerRow {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .langToggle {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .formCard {
+    padding: 10px;
+    border-radius: 14px;
+  }
+
+  .originRow {
+    grid-template-columns: 1fr;
+  }
+
+  .modeToggle {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .modeToggle button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .presetList {
+    grid-template-columns: 1fr;
+  }
+
+  .tierItem {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

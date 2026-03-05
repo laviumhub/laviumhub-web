@@ -19,6 +19,7 @@ import { IconInfoCircle } from "@tabler/icons-react"
 import dayjs from "dayjs"
 import 'dayjs/locale/id'
 import { useEffect, useState } from "react"
+import Delivery from "./Delivery"
 import DEFAULT_MACHINES from "./data/DEFAULT_MACHINES.json"
 import MachineTrackers from "./informations/MachineTrackers"
 import ServicesContent from "./services/ServicesContent"
@@ -28,11 +29,12 @@ dayjs.locale('id')
 
 const tabs = [
   { key: 'informasi', label: 'Informasi'},
-  { key: 'layanan', label: 'Layanan'}
+  { key: 'layanan', label: 'Layanan'},
+  { key: 'antar-jemput', label: 'Antar Jemput'}
 ]
 
 export default function App() {
-  const isMobile = useMediaQuery('(max-width: 768px')
+  const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState('informasi')
   const [lastUpdate, setLastUpdate] = useState(null)
   const [machines, setMachines] = useState(DEFAULT_MACHINES)
@@ -57,7 +59,7 @@ export default function App() {
       setLastUpdate(dayjs(data.timestamp).format('DD MMMM YYYY HH:mm:ss'))
     } catch (err) {
       console.error(err)
-      setMachines(default_machines)
+      setMachines(DEFAULT_MACHINES)
     }
   }
 
@@ -92,6 +94,12 @@ export default function App() {
         }
       `}</style>
       <style>{`
+        @keyframes pulseBadge {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.65; transform: scale(1.06); }
+        }
+      `}</style>
+      <style>{`
         .custom-tab {
           background-color: rgba(255,255,255,0.6);
           color: #900000;
@@ -99,6 +107,24 @@ export default function App() {
         .custom-tab[data-active], .custom-tab[data-active="true"] {
           background-color: #900000 !important;
           color: #fff !important;
+        }
+        .new-badge {
+          margin-left: 8px;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.4px;
+          padding: 2px 6px;
+          border-radius: 999px;
+          background: #ffcc00;
+          color: #6b0000;
+          animation: pulseBadge 1s ease-in-out infinite;
+          display: inline-block;
+          vertical-align: middle;
+        }
+        @media (max-width: 768px) {
+          .custom-tab.tab-antar-jemput {
+            grid-column: 1 / -1;
+          }
         }
       `}</style>
 
@@ -128,32 +154,43 @@ export default function App() {
                   },
                   list: {
                     border: 'none',
-                    gap: '4px',
+                    gap: isMobile ? '8px' : '4px',
+                    display: isMobile ? 'grid' : 'flex',
+                    gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : undefined,
                   },
                   tab: {
                     backgroundColor: 'rgba(255, 255, 255, 0.6)',
                     border: '2px solid #900000',
-                    borderBottom: 'none',
-                    borderRadius: '12px 12px 0 0',
-                    padding: '12px 24px',
+                    borderBottom: isMobile ? '2px solid #900000' : 'none',
+                    borderRadius: isMobile ? '12px' : '12px 12px 0 0',
+                    padding: isMobile ? '10px 12px' : '12px 24px',
                     fontWeight: 600,
                     color: '#900000',
                     transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
                     transform: 'translateY(0)',
                     position: 'relative',
+                    justifyContent: 'center',
+                    minHeight: isMobile ? '54px' : undefined,
                     '&:hover': {
                       backgroundColor: 'rgba(255, 255, 255, 0.8)',
                       transform: 'translateY(-2px)',
                     },
                   },
                   panel: {
-                    marginTop: '-2px',
+                    marginTop: isMobile ? '10px' : '-2px',
                   }
                 }}
               >
                 <Tabs.List>
                   {tabs.map((tb) => (
-                    <Tabs.Tab key={tb.key} value={tb.key} className="custom-tab">{tb.label}</Tabs.Tab>
+                    <Tabs.Tab
+                      key={tb.key}
+                      value={tb.key}
+                      className={`custom-tab ${tb.key === 'antar-jemput' ? 'tab-antar-jemput' : ''}`}
+                    >
+                      {tb.label}
+                      {tb.key === 'antar-jemput' ? <span className="new-badge">BARU</span> : null}
+                    </Tabs.Tab>
                   ))}
                 </Tabs.List>
 
@@ -388,6 +425,81 @@ export default function App() {
                     </Paper>
                   </Box>
                 </Tabs.Panel>
+
+                <Tabs.Panel value="antar-jemput">
+                  <Box
+                    key={`panel-antar-jemput-${activeTab}`}
+                    style={{
+                      position: 'relative',
+                      animation: 'fadeSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  >
+                    {!isMobile && (
+                      <Box
+                        style={{
+                          position: 'absolute',
+                          bottom: '-8px',
+                          left: '8px',
+                          right: '-8px',
+                          height: '100%',
+                          background: 'rgba(144, 0, 0, 0.1)',
+                          border: '2px solid rgba(144, 0, 0, 0.3)',
+                          borderRadius: '0 12px 12px 12px',
+                          zIndex: 1,
+                          transition: 'all 0.4s ease',
+                        }}
+                      />
+                    )}
+                    {!isMobile && (
+                      <Box
+                        style={{
+                          position: 'absolute',
+                          bottom: '-4px',
+                          left: '4px',
+                          right: '-4px',
+                          height: '100%',
+                          background: 'rgba(144, 0, 0, 0.15)',
+                          border: '2px solid rgba(144, 0, 0, 0.4)',
+                          borderRadius: '0 12px 12px 12px',
+                          zIndex: 2,
+                          transition: 'all 0.4s ease',
+                        }}
+                      />
+                    )}
+                    <Paper
+                      p={{ base: 'lg', md: 'xl' }}
+                      shadow="xl"
+                      style={{
+                        position: 'relative',
+                        zIndex: 3,
+                        background: "rgba(255, 255, 255, 0.95)",
+                        backdropFilter: "blur(10px)",
+                        border: '2px solid #900000',
+                        borderRadius: isMobile ? '14px' : '0 12px 12px 12px',
+                        minHeight: isMobile ? "auto" : "400px",
+                        transition: 'all 0.4s ease',
+                      }}
+                    >
+                      <Text ta="center" fw={800} size={isMobile ? "lg" : "xl"} py={isMobile ? "xs" : "md"}>
+                        Antar jemput premium, solusi praktis untuk kebutuhanmu.
+                      </Text>
+                      <Stack gap={isMobile ? "sm" : "xs"} px={{ base: 0, md: 'sm' }} pt="xs">
+                        <Text size={isMobile ? "sm" : "md"} c="dimmed" fw={600}>
+                          Promo terbatas!
+                        </Text>
+                        <Text size={isMobile ? "sm" : "md"} c="dimmed">
+                          1. Dibuka 4 slot alamat untuk pengambilan rutin. Jadwalkan sekarang sebelum kuota minggu ini penuh.
+                        </Text>
+                        <Text size={isMobile ? "sm" : "md"} c="dimmed">
+                          2. Ajak temanmu dan dapatkan potongan Rp2.000 untuk setiap orang yang berhasil bergabung.
+                        </Text>
+                        <Text size={isMobile ? "sm" : "md"} c="dimmed">
+                          3. Harga berlaku untuk kisaran +/- 15 kg per pengambilan. Di atas itu dihitung 2x pengiriman.
+                        </Text>
+                      </Stack>
+                    </Paper>
+                  </Box>
+                </Tabs.Panel>
               </Tabs>
             </GridCol>
 
@@ -399,6 +511,10 @@ export default function App() {
 
               {activeTab === 'layanan' &&
                 <ServicesContent />
+              }
+
+              {activeTab === 'antar-jemput' &&
+                <Delivery />
               }
             </GridCol>
           </Grid>

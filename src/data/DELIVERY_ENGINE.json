@@ -1,0 +1,38 @@
+{
+  "features": {
+    "deliveryRuleEngine": true,
+    "routeMode": true
+  },
+  "business": {
+    "id": "lh-001",
+    "name": "Laundry LaviumHub Sentiong",
+    "active": true,
+    "destination": {
+      "lat": -6.1875957,
+      "lng": 106.8454171
+    }
+  },
+  "rules": [
+    {
+      "id": "tier-1",
+      "label": "<= 4 km",
+      "maxMeters": 4000,
+      "price": 15000,
+      "active": true
+    },
+    {
+      "id": "tier-2",
+      "label": "<= 8 km",
+      "maxMeters": 8000,
+      "price": 25000,
+      "active": true
+    },
+    {
+      "id": "tier-3",
+      "label": "<= 12 km",
+      "maxMeters": 12000,
+      "price": 35000,
+      "active": true
+    }
+  ]
+}
