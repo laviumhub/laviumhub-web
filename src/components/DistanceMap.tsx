@@ -1,8 +1,8 @@
 import "leaflet/dist/leaflet.css";
 import type { LatLng } from "../lib/geo";
 import L from "leaflet";
-import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
-import { useEffect } from "react";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { useEffect, useRef } from "react";
 import styles from "./DistanceMap.module.css";
 
 function buildPinSvg(color: string) {
@@ -35,14 +35,18 @@ function FitMapView({
   origin,
   destination,
   routePath,
+  suspendAutoFit,
 }: {
   origin: LatLng;
   destination: LatLng | null;
   routePath: LatLng[] | null;
+  suspendAutoFit: boolean;
 }) {
   const map = useMap();
 
   useEffect(() => {
+    if (suspendAutoFit) return;
+
     if (!destination) {
       map.setView([origin.lat, origin.lng], 14);
       return;
@@ -51,7 +55,109 @@ function FitMapView({
     const points = routePath && routePath.length >= 2 ? routePath : [origin, destination];
     const bounds = L.latLngBounds(points.map((point) => [point.lat, point.lng] as [number, number]));
     map.fitBounds(bounds.pad(0.12));
-  }, [map, origin, destination, routePath]);
+  }, [map, origin, destination, routePath, suspendAutoFit]);
+
+  useEffect(() => {
+    if (!suspendAutoFit) return;
+    map.setView([origin.lat, origin.lng], Math.max(map.getZoom(), 14));
+  }, [map, origin, suspendAutoFit]);
+
+  return null;
+}
+
+function MapPickEvents({
+  enabled,
+  onPickOrigin,
+}: {
+  enabled: boolean;
+  onPickOrigin?: (point: LatLng) => void;
+}) {
+  const longPressTimer = useRef<number | null>(null);
+  const map = useMapEvents({
+    dblclick(event) {
+      if (!enabled || !onPickOrigin) return;
+      onPickOrigin({ lat: event.latlng.lat, lng: event.latlng.lng });
+    },
+    touchstart(event) {
+      if (!enabled || !onPickOrigin) return;
+      if (longPressTimer.current !== null) window.clearTimeout(longPressTimer.current);
+      const { lat, lng } = event.latlng;
+      longPressTimer.current = window.setTimeout(() => {
+        onPickOrigin({ lat, lng });
+        longPressTimer.current = null;
+      }, 550);
+    },
+    touchend() {
+      if (longPressTimer.current !== null) {
+        window.clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    },
+    touchmove() {
+      if (longPressTimer.current !== null) {
+        window.clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    },
+    movestart() {
+      if (longPressTimer.current !== null) {
+        window.clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    },
+  });
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current !== null) window.clearTimeout(longPressTimer.current);
+    };
+  }, []);
+
+  return null;
+}
+
+function EnsureMapInteractions({ allowPickOrigin }: { allowPickOrigin: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    map.dragging.enable();
+    map.scrollWheelZoom.enable();
+    map.touchZoom.enable();
+    map.boxZoom.enable();
+    map.keyboard.enable();
+    if (allowPickOrigin) {
+      map.doubleClickZoom.disable();
+    } else {
+      map.doubleClickZoom.enable();
+    }
+  }, [map, allowPickOrigin]);
+
+  return null;
+}
+
+function FitAfterPick({
+  token,
+  origin,
+  destination,
+}: {
+  token: number;
+  origin: LatLng;
+  destination: LatLng | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (token <= 0) return;
+    if (!destination) {
+      map.setView([origin.lat, origin.lng], 13);
+      return;
+    }
+    const bounds = L.latLngBounds([
+      [origin.lat, origin.lng],
+      [destination.lat, destination.lng],
+    ]);
+    map.fitBounds(bounds.pad(0.16));
+  }, [map, token, origin, destination]);
 
   return null;
 }
@@ -63,6 +169,9 @@ export default function DistanceMap({
   routePath,
   originPopupLabel,
   destinationPopupLabel,
+  allowPickOrigin = false,
+  onPickOrigin,
+  fitAfterPickToken = 0,
 }: {
   origin: LatLng;
   destination: LatLng | null;
@@ -70,8 +179,11 @@ export default function DistanceMap({
   routePath: LatLng[] | null;
   originPopupLabel: string;
   destinationPopupLabel: string;
+  allowPickOrigin?: boolean;
+  onPickOrigin?: (point: LatLng) => void;
+  fitAfterPickToken?: number;
 }) {
-  const center = destination ?? origin;
+  const center = allowPickOrigin ? origin : destination ?? origin;
   const polylinePositions =
     destination === null
       ? null
@@ -84,8 +196,26 @@ export default function DistanceMap({
 
   return (
     <div className={styles.wrap}>
-      <MapContainer center={[center.lat, center.lng]} zoom={14} className={styles.map}>
-        <FitMapView origin={origin} destination={destination} routePath={routePath} />
+      <MapContainer
+        center={[center.lat, center.lng]}
+        zoom={14}
+        className={styles.map}
+        dragging
+        scrollWheelZoom
+        doubleClickZoom
+        touchZoom
+        boxZoom
+        keyboard
+      >
+        <EnsureMapInteractions allowPickOrigin={allowPickOrigin} />
+        <FitMapView
+          origin={origin}
+          destination={destination}
+          routePath={routePath}
+          suspendAutoFit={allowPickOrigin}
+        />
+        <FitAfterPick token={fitAfterPickToken} origin={origin} destination={destination} />
+        <MapPickEvents enabled={allowPickOrigin} onPickOrigin={onPickOrigin} />
         <TileLayer
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

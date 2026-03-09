@@ -4,8 +4,10 @@ import {
   Box,
   Button,
   Card,
+  Checkbox,
   Group,
   Paper,
+  Progress,
   SegmentedControl,
   SimpleGrid,
   Stack,
@@ -15,7 +17,7 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconInfoCircle, IconMapPin, IconNavigation } from "@tabler/icons-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DistanceMap from "./components/DistanceMap";
 import {
   getActiveRules,
@@ -33,7 +35,7 @@ import type { DeliveryEngineConfig, OsrmResponse, RouteState } from "./lib/deliv
 import type { LatLng } from "./lib/geo";
 import { haversineKm } from "./lib/geo";
 
-const DEFAULT_ORIGIN: LatLng = { lat: -6.2, lng: 106.811666 };
+const DEFAULT_ORIGIN: LatLng = { lat: -6.1843334, lng: 106.8398113 };
 const KRAMAT_RAYA_WAYPOINT: LatLng = { lat: -6.1782, lng: 106.8423 };
 const LAVIUMHUB_WHATSAPP = "6285117674118";
 
@@ -65,6 +67,9 @@ type Messages = {
   outOfCoverage: string;
   mapYourLocation: string;
   orderNow: string;
+  pickFromMap: string;
+  pickFromMapHint: string;
+  pickFromMapLoading: string;
 };
 
 const MESSAGES: Record<Language, Messages> = {
@@ -94,6 +99,9 @@ const MESSAGES: Record<Language, Messages> = {
     outOfCoverage: "Jarak di luar cakupan tier aktif.",
     mapYourLocation: "Lokasi Anda",
     orderNow: "Pesan Sekarang",
+    pickFromMap: "Pilih dari peta",
+    pickFromMapHint: "Saat aktif: desktop double click, mobile long press untuk ganti titik. Peta tetap bisa digeser/zoom.",
+    pickFromMapLoading: "Memperbarui titik lokasi...",
   },
   en: {
     title: "Laundry Pickup & Delivery",
@@ -121,6 +129,9 @@ const MESSAGES: Record<Language, Messages> = {
     outOfCoverage: "Distance is outside active tiers.",
     mapYourLocation: "Your location",
     orderNow: "Order Now",
+    pickFromMap: "Pick from map",
+    pickFromMapHint: "When enabled: double click on desktop, long press on mobile to set point. Map stays draggable/zoomable.",
+    pickFromMapLoading: "Updating location point...",
   },
 };
 
@@ -140,7 +151,12 @@ export default function Delivery() {
   const [language, setLanguage] = useState<Language>("id");
   const [routeState, setRouteState] = useState<RouteState | null>(null);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [geoError, setGeoError] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [pickFromMap, setPickFromMap] = useState(false);
+  const [mapCandidateOrigin, setMapCandidateOrigin] = useState<LatLng | null>(null);
+  const [isMapPickLoading, setIsMapPickLoading] = useState(false);
+  const [fitAfterPickToken, setFitAfterPickToken] = useState(0);
 
   const t = MESSAGES[language];
 
@@ -148,6 +164,30 @@ export default function Delivery() {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  const handleMapPickCandidate = useCallback((next: LatLng) => {
+    setMapCandidateOrigin(next);
+  }, []);
+
+  useEffect(() => {
+    if (!pickFromMap || !mapCandidateOrigin) {
+      setIsMapPickLoading(false);
+      return;
+    }
+
+    setIsMapPickLoading(true);
+    const timer = window.setTimeout(() => {
+      setOrigin((prev) => {
+        const movedKm = haversineKm(prev, mapCandidateOrigin);
+        if (movedKm < 0.005) return prev;
+        setFitAfterPickToken((prevToken) => prevToken + 1);
+        return mapCandidateOrigin;
+      });
+      setIsMapPickLoading(false);
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [pickFromMap, mapCandidateOrigin]);
 
   const straightDistanceKm = useMemo(() => {
     if (!destination) return null;
@@ -189,7 +229,7 @@ export default function Delivery() {
 
   function requestLocation() {
     if (!navigator.geolocation) {
-      alert(t.geoUnsupported);
+      setGeoError(t.geoUnsupported);
       return;
     }
 
@@ -197,9 +237,10 @@ export default function Delivery() {
       (pos) => {
         setOrigin({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setHasGeo(true);
+        setGeoError(null);
       },
       () => {
-        alert(t.geoDenied);
+        setGeoError(t.geoDenied);
       },
       { enableHighAccuracy: true, timeout: 12000 }
     );
@@ -325,6 +366,32 @@ export default function Delivery() {
                         {hasGeo ? t.refreshLocation : t.requestLocation}
                       </Button>
                     </Group>
+                    {geoError ? (
+                      <Text size="xs" c="red">
+                        {geoError}
+                      </Text>
+                    ) : null}
+                    <Checkbox
+                      checked={pickFromMap}
+                      onChange={(event) => setPickFromMap(event.currentTarget.checked)}
+                      label={t.pickFromMap}
+                      size="sm"
+                    />
+                    {pickFromMap ? (
+                      <>
+                        <Text size="xs" c="dimmed">
+                          {t.pickFromMapHint}
+                        </Text>
+                        {isMapPickLoading ? (
+                          <Stack gap={4}>
+                            <Text size="xs" c="dimmed">
+                              {t.pickFromMapLoading}
+                            </Text>
+                            <Progress value={100} animated size={4} radius="xl" />
+                          </Stack>
+                        ) : null}
+                      </>
+                    ) : null}
                   </Stack>
                 </Paper>
 
@@ -446,6 +513,9 @@ export default function Delivery() {
         routePath={routeState?.path ?? null}
         originPopupLabel={t.mapYourLocation}
         destinationPopupLabel={config.business.name}
+        allowPickOrigin={pickFromMap}
+        onPickOrigin={handleMapPickCandidate}
+        fitAfterPickToken={fitAfterPickToken}
       />
     </Stack>
   );
