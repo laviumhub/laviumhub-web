@@ -5,6 +5,9 @@
   "type": "module",
   "author": "laviumhub team",
   "scripts": {
+    "generate:ads-manifest": "node scripts/generate-advertisements-manifest.mjs",
+    "predev": "npm run generate:ads-manifest",
+    "prebuild": "npm run generate:ads-manifest",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",

@@ -27,7 +27,7 @@ export default function MachineTrackers({machines}) {
                     <IconWash size={24} />
                 </ThemeIcon>
                 <Title order={2} c="#900000">
-                    🧺 Mesin Cuci
+                    Mesin Cuci
                 </Title>
             </Group>
 
@@ -118,7 +118,7 @@ export default function MachineTrackers({machines}) {
                     <IconWindmill size={24} />
                 </ThemeIcon>
                 <Title order={2} c="#900000">
-                    🌪️ Pengering
+                    Pengering
                 </Title>
             </Group>
 

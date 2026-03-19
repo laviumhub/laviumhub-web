@@ -5,6 +5,7 @@ import {
   Grid,
   GridCol,
   Group,
+  Modal,
   Paper,
   Skeleton,
   Stack,
@@ -27,6 +28,14 @@ import Footer from "./shared/Footer"
 import Header from "./shared/Header"
 dayjs.locale('id')
 
+const STORY_SLIDE_MS = 5000
+const STORY_COOLDOWN_MS = 120000
+const PUBLIC_BASE_URL = import.meta.env.BASE_URL || "/"
+
+function withBaseUrl(path) {
+  return `${PUBLIC_BASE_URL}${String(path).replace(/^\/+/, "")}`
+}
+
 const tabs = [
   { key: 'informasi', label: 'Informasi'},
   { key: 'layanan', label: 'Layanan'},
@@ -38,6 +47,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('informasi')
   const [lastUpdate, setLastUpdate] = useState(null)
   const [machines, setMachines] = useState(DEFAULT_MACHINES)
+  const [isMachineModalOpen, setIsMachineModalOpen] = useState(false)
+  const [storyIndex, setStoryIndex] = useState(0)
+  const [storyElapsedMs, setStoryElapsedMs] = useState(0)
+  const [storyImages, setStoryImages] = useState([])
+  const hideStoryModalCloseButton =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("config") === "wob"
 
   const total = machines.length
   const available = machines.filter((m) => m.state === "MATI").length
@@ -68,6 +84,96 @@ export default function App() {
     const interval = setInterval(fetchData, 180000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadAdvertisementImages = async () => {
+      try {
+        const response = await fetch(withBaseUrl("advertisements/manifest.json"), { cache: "no-store" })
+        if (!response.ok) throw new Error(`Failed to load advertisements manifest (${response.status})`)
+        const payload = await response.json()
+        const images = Array.isArray(payload?.images)
+          ? payload.images.map((imagePath) => withBaseUrl(imagePath))
+          : []
+        if (cancelled) return
+        setStoryImages(images)
+      } catch (error) {
+        console.error(error)
+        if (cancelled) return
+        setStoryImages([])
+      }
+    }
+
+    void loadAdvertisementImages()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeTab !== "informasi" || storyImages.length === 0) {
+      setIsMachineModalOpen(false)
+      setStoryIndex(0)
+      setStoryElapsedMs(0)
+      return
+    }
+
+    let slideTimerId
+    let reopenTimerId
+    let progressIntervalId
+    let stopped = false
+    let slideStartedAt = Date.now()
+
+    const startProgressTick = () => {
+      window.clearInterval(progressIntervalId)
+      progressIntervalId = window.setInterval(() => {
+        const elapsed = Date.now() - slideStartedAt
+        setStoryElapsedMs(Math.min(elapsed, STORY_SLIDE_MS))
+      }, 80)
+    }
+
+    const runSlide = (index) => {
+      if (stopped) return
+
+      setStoryIndex(index)
+      setStoryElapsedMs(0)
+      slideStartedAt = Date.now()
+      startProgressTick()
+
+      slideTimerId = window.setTimeout(() => {
+        if (stopped) return
+
+        if (index < storyImages.length - 1) {
+          runSlide(index + 1)
+          return
+        }
+
+        setIsMachineModalOpen(false)
+        setStoryIndex(0)
+        setStoryElapsedMs(0)
+        window.clearInterval(progressIntervalId)
+        reopenTimerId = window.setTimeout(runModalLoop, STORY_COOLDOWN_MS)
+      }, STORY_SLIDE_MS)
+    }
+
+    const runModalLoop = () => {
+      if (stopped) return
+
+      setIsMachineModalOpen(true)
+      runSlide(0)
+    }
+
+    runModalLoop()
+
+    return () => {
+      stopped = true
+      window.clearTimeout(slideTimerId)
+      window.clearTimeout(reopenTimerId)
+      window.clearInterval(progressIntervalId)
+    }
+  }, [activeTab, storyImages])
 
   return (
     <AppShell
@@ -129,6 +235,108 @@ export default function App() {
       `}</style>
 
       <Header />
+      <Modal
+        opened={isMachineModalOpen}
+        onClose={() => setIsMachineModalOpen(false)}
+        withCloseButton={!hideStoryModalCloseButton}
+        closeOnClickOutside={!hideStoryModalCloseButton}
+        closeOnEscape={!hideStoryModalCloseButton}
+        centered
+        padding={0}
+        radius="md"
+        size="auto"
+        styles={{
+          inner: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          },
+          body: { padding: 0, height: "100%" },
+          content: {
+            backgroundColor: "#000",
+            height: "min(calc(100vh - 32px), 860px)",
+            width: "min(calc((100vh - 32px) * 0.5625), calc(100vw - 32px), 484px)",
+            maxWidth: "100%",
+            overflow: "hidden",
+            margin: 0,
+          },
+          header: {
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 2,
+            background: "transparent",
+          },
+          close: {
+            color: "#fff",
+            backgroundColor: "rgba(0,0,0,0.4)",
+            backdropFilter: "blur(2px)",
+          },
+        }}
+      >
+        <Box
+          style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#000",
+            position: "relative",
+          }}
+        >
+          <Box
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 10,
+              right: hideStoryModalCloseButton ? 10 : 56,
+              zIndex: 2,
+              display: "flex",
+              gap: 6,
+            }}
+          >
+            {storyImages.map((_, index) => {
+              let ratio = 0
+              if (index < storyIndex) ratio = 1
+              if (index === storyIndex) ratio = storyElapsedMs / STORY_SLIDE_MS
+
+              return (
+                <Box
+                  key={`story-progress-${index}`}
+                  style={{
+                    flex: 1,
+                    height: 4,
+                    borderRadius: 999,
+                    backgroundColor: "rgba(255,255,255,0.35)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Box
+                    style={{
+                      width: `${Math.max(0, Math.min(1, ratio)) * 100}%`,
+                      height: "100%",
+                      backgroundColor: "#fff",
+                      transition: "width 80ms linear",
+                    }}
+                  />
+                </Box>
+              )
+            })}
+          </Box>
+          <img
+            src={storyImages[storyIndex]}
+            alt={`Promo Mesin LaviumHub ${storyIndex + 1}`}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+              objectPosition: "center",
+            }}
+          />
+        </Box>
+      </Modal>
 
       {/* 🔻 CONTENT */}
       <Box style={{ flex: 1 }}>
