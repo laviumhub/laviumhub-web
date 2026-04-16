@@ -1,3 +1,5 @@
+"use client";
+
 import {
   AppShell,
   Box,
@@ -20,6 +22,7 @@ import { IconInfoCircle } from "@tabler/icons-react"
 import dayjs from "dayjs"
 import 'dayjs/locale/id'
 import { useEffect, useState } from "react"
+import type { RawMachineRecord } from "@/data/types/raw-machine"
 import Delivery from "./Delivery"
 import DEFAULT_MACHINES from "./data/DEFAULT_MACHINES.json"
 import MachineTrackers from "./informations/MachineTrackers"
@@ -30,9 +33,20 @@ dayjs.locale('id')
 
 const STORY_SLIDE_MS = 5000
 const STORY_COOLDOWN_MS = 120000
-const PUBLIC_BASE_URL = import.meta.env.BASE_URL || "/"
+const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_PATH || "/"
 
-function withBaseUrl(path) {
+type AppTabKey = "informasi" | "layanan" | "antar-jemput"
+
+type ScraperPayload = {
+  data?: RawMachineRecord[]
+  timestamp?: string
+}
+
+type AdvertisementManifest = {
+  images?: string[]
+}
+
+function withBaseUrl(path: string): string {
   return `${PUBLIC_BASE_URL}${String(path).replace(/^\/+/, "")}`
 }
 
@@ -44,13 +58,13 @@ const tabs = [
 
 export default function App() {
   const isMobile = useMediaQuery('(max-width: 768px)')
-  const [activeTab, setActiveTab] = useState('informasi')
-  const [lastUpdate, setLastUpdate] = useState(null)
-  const [machines, setMachines] = useState(DEFAULT_MACHINES)
+  const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
+  const [lastUpdate, setLastUpdate] = useState<string | null>(null)
+  const [machines, setMachines] = useState<RawMachineRecord[]>(DEFAULT_MACHINES as RawMachineRecord[])
   const [isMachineModalOpen, setIsMachineModalOpen] = useState(false)
   const [storyIndex, setStoryIndex] = useState(0)
   const [storyElapsedMs, setStoryElapsedMs] = useState(0)
-  const [storyImages, setStoryImages] = useState([])
+  const [storyImages, setStoryImages] = useState<string[]>([])
   const hideStoryModalCloseButton =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("config") === "wob"
@@ -69,13 +83,15 @@ export default function App() {
 
   const fetchData = async () => {
     try {
-      const res = await fetch('https://d-agung.com/scrapper/scrapper.php?key=8c14c1035d8cdbe9c69270820d7bb08d0de9dc01d8d05b3dc6bd58b47bee20a0')
-      const data = await res.json()
-      setMachines(data.data)
-      setLastUpdate(dayjs(data.timestamp).format('DD MMMM YYYY HH:mm:ss'))
+      const res = await fetch('/api/scraper', { cache: "no-store" })
+      const data = (await res.json()) as ScraperPayload
+      setMachines(Array.isArray(data.data) ? data.data : (DEFAULT_MACHINES as RawMachineRecord[]))
+      if (data.timestamp) {
+        setLastUpdate(dayjs(data.timestamp).format('DD MMMM YYYY HH:mm:ss'))
+      }
     } catch (err) {
       console.error(err)
-      setMachines(DEFAULT_MACHINES)
+      setMachines(DEFAULT_MACHINES as RawMachineRecord[])
     }
   }
 
@@ -92,7 +108,7 @@ export default function App() {
       try {
         const response = await fetch(withBaseUrl("advertisements/manifest.json"), { cache: "no-store" })
         if (!response.ok) throw new Error(`Failed to load advertisements manifest (${response.status})`)
-        const payload = await response.json()
+        const payload = (await response.json()) as AdvertisementManifest
         const images = Array.isArray(payload?.images)
           ? payload.images.map((imagePath) => withBaseUrl(imagePath))
           : []
@@ -120,9 +136,9 @@ export default function App() {
       return
     }
 
-    let slideTimerId
-    let reopenTimerId
-    let progressIntervalId
+    let slideTimerId: number | undefined
+    let reopenTimerId: number | undefined
+    let progressIntervalId: number | undefined
     let stopped = false
     let slideStartedAt = Date.now()
 
@@ -134,7 +150,7 @@ export default function App() {
       }, 80)
     }
 
-    const runSlide = (index) => {
+    const runSlide = (index: number) => {
       if (stopped) return
 
       setStoryIndex(index)
@@ -352,9 +368,13 @@ export default function App() {
           <Grid>
             {/* LEFT PANEL */}
             <GridCol span={{ base: 12, md: 4 }}>
-              <Tabs
+                <Tabs
                 value={activeTab}
-                onChange={setActiveTab}
+                onChange={(value) => {
+                  if (value === "informasi" || value === "layanan" || value === "antar-jemput") {
+                    setActiveTab(value)
+                  }
+                }}
                 styles={{
                   root: {
                     maxWidth: "600px",
@@ -458,7 +478,7 @@ export default function App() {
                         transition: 'all 0.4s ease',
                       }}
                     >
-                    <Stack align="center" gap={{base: 'sm', md: 'md'}}>
+                    <Stack align="center" gap="md">
                       <Title
                         order={1}
                         ta="center"
@@ -472,7 +492,7 @@ export default function App() {
                       >
                         Kramat Sentiong
                       </Title>
-                      <Group gap={{base: 'xs', md: 'md'}}>
+                      <Group gap="md">
                         <Box ta="center">
                           <Text size="3rem" fw={900} c="teal.6">
                             {available}

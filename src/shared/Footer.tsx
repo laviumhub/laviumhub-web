@@ -1,6 +1,5 @@
 import { Box, Container, Grid, Group, Image, Stack, Text } from '@mantine/core'
 import { IconBrandFacebook, IconBrandInstagram, IconBrandTiktok, IconBrandWhatsapp, IconMapPin, IconPin, IconPinned } from "@tabler/icons-react"
-import laviumLogo from "../assets/lavium-logo.png"
 
 const Footer = () => {
   return (
@@ -16,7 +15,7 @@ const Footer = () => {
           <Grid gutter={{ base: "md", md: "xl" }} align="center">
             <Grid.Col span={{ base: 12, md: 6 }}>
               <Stack align="center" gap="xs">
-                <Image src={laviumLogo} alt="LaviumHub Logo" height={40} fit="contain" />
+                <Image src="/assets/lavium-logo.png" alt="LaviumHub Logo" height={40} fit="contain" />
                 <Group
                   onClick={()=> window.open("https://wa.me/6285117674118", "_blank")}
                   style={{cursor: 'pointer'}}
@@ -66,7 +65,7 @@ const Footer = () => {
                 }}
               >
                 <iframe
-                  src="https://www.google.com/maps?q=-6.187578,106.8480378&z=20&output=embed"
+                  src="https://www.google.com/maps?q=-6.1875957,106.847992&z=20&output=embed"
                   width="100%"
                   height="250"
                   style={{ border: 0, borderRadius: "12px" }}

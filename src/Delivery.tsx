@@ -17,8 +17,8 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconInfoCircle, IconMapPin, IconNavigation } from "@tabler/icons-react";
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import DistanceMap from "./components/DistanceMap";
 import {
   getActiveRules,
   getBusinessDestination,
@@ -34,6 +34,10 @@ import { buildOsrmRouteUrl, parseOsrmRoute } from "./lib/delivery-engine/routing
 import type { DeliveryEngineConfig, OsrmResponse, RouteState } from "./lib/delivery-engine/types";
 import type { LatLng } from "./lib/geo";
 import { haversineKm } from "./lib/geo";
+
+const DistanceMap = dynamic(() => import("./components/DistanceMap"), {
+  ssr: false,
+});
 
 const DEFAULT_ORIGIN: LatLng = { lat: -6.1843334, lng: 106.8398113 };
 const KRAMAT_RAYA_WAYPOINT: LatLng = { lat: -6.1782, lng: 106.8423 };
@@ -282,6 +286,8 @@ export default function Delivery() {
   const routeDistanceKm = routeState?.distanceKm ?? null;
   const pricingDistanceKm = pricingMode === "route" ? routeDistanceKm : straightDistanceKm;
   const pricingDistanceMeters = distanceKmToMeters(pricingDistanceKm);
+  const mapOrigin = destination ?? origin;
+  const mapDestination = destination ? origin : null;
   const originText = `${origin.lat.toFixed(6)}, ${origin.lng.toFixed(6)}`;
   const nowText = now.toLocaleString(language === "id" ? "id-ID" : "en-US", {
     dateStyle: "medium",
@@ -507,13 +513,16 @@ export default function Delivery() {
       </Card>
 
       <DistanceMap
-        origin={origin}
-        destination={destination}
+        origin={mapOrigin}
+        destination={mapDestination}
         mode={pricingMode}
         routePath={routeState?.path ?? null}
-        originPopupLabel={t.mapYourLocation}
-        destinationPopupLabel={config.business.name}
+        originPopupLabel={config.business.name}
+        destinationPopupLabel={t.mapYourLocation}
         allowPickOrigin={pickFromMap}
+        pickTarget="destination"
+        swapMarkerColors
+        onPickDestination={handleMapPickCandidate}
         onPickOrigin={handleMapPickCandidate}
         fitAfterPickToken={fitAfterPickToken}
       />

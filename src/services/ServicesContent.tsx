@@ -3,9 +3,26 @@ import { Badge, Blockquote, Card, Grid, GridCol, Group, Image, Stack, Text, Titl
 import Autoplay from 'embla-carousel-autoplay'
 import { useRef } from "react"
 import SERVICES_DATA from "../data/SERVICES_DATA.json"
-import thumbnailImg from "/thumbnail.png"
 
-function ServiceCard({ service }) {
+type ServiceContent = {
+  id: string
+  title: string
+  badge: string
+  headline: string
+  description: string
+  blockquote: {
+    line1: string
+    line2?: string
+  }
+  footer: string
+  images: string[]
+}
+
+type ServiceCardProps = {
+  service: ServiceContent
+}
+
+function ServiceCard({ service }: ServiceCardProps) {
   const autoplay = useRef(Autoplay({ delay: 3000 }))
 
   return (
@@ -21,7 +38,7 @@ function ServiceCard({ service }) {
               slide: { height: '100%' },
             }}
             plugins={[autoplay.current]}
-            loop
+            emblaOptions={{ loop: true }}
             onMouseEnter={autoplay.current.stop}
             onMouseLeave={() => autoplay.current.play()}
           >
@@ -31,7 +48,7 @@ function ServiceCard({ service }) {
                   src={img}
                   h="280px"
                   alt={service.badge}
-                  fallbackSrc={thumbnailImg}
+                  fallbackSrc="/thumbnail.png"
                   fit="cover"
                   style={{
                     width: '100%',
@@ -59,8 +76,12 @@ function ServiceCard({ service }) {
 
         <Blockquote my="xs" py="xs">
           <span dangerouslySetInnerHTML={{ __html: service.blockquote.line1 }} />
-          <br />
-          <span dangerouslySetInnerHTML={{ __html: service.blockquote.line2 }} />
+          {service.blockquote.line2 ? (
+            <>
+              <br />
+              <span dangerouslySetInnerHTML={{ __html: service.blockquote.line2 }} />
+            </>
+          ) : null}
         </Blockquote>
 
         <Text size="sm" c="dimmed">
@@ -72,9 +93,11 @@ function ServiceCard({ service }) {
 }
 
 export default function ServicesContent() {
+  const services = SERVICES_DATA as ServiceContent[]
+
   return (
     <Grid>
-      {SERVICES_DATA.map(service => (
+      {services.map(service => (
         <ServiceCard key={service.id} service={service} />
       ))}
       

@@ -1,82 +1,57 @@
-# LaviumHub
+# LaviumHub (Next.js + TypeScript)
 
-A modern laundry management system built with React that provides real-time monitoring of washing machines and dryers.
+Modernized frontend scaffold with Next.js App Router, TypeScript, Mantine, and a clean data abstraction layer.
 
-## Features
+## Stack
 
-- Real-time machine status monitoring
-- Responsive design for all devices
-- Automated status updates every 3 minutes
-- Interactive UI with hover effects
-- Mobile-friendly interface
+- Next.js `16.2.3` (App Router)
+- React `19`
+- TypeScript (strict)
+- Mantine `8`
 
-## Tech Stack
+## Architecture
 
-- React 18
-- Vite
-- Mantine UI
-- Day.js
-- React Icons
+- `src/app`: App Router entrypoints, layout, providers.
+- `src/ui`: reusable UI shell/components.
+- `src/features`: feature-facing presentation modules.
+- `src/domain`: app-level models/interfaces.
+- `src/data`: source-specific raw types, json sources, and mappers.
+- `src/repositories`: repository contracts and implementations.
+- `src/services`: use-case/services consumed by pages.
+- `src/lib`: shared utilities and theme.
 
-## Getting Started
+## Run
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/laviumhub.git
-cd laviumhub
-```
-
-2. Install dependencies:
 ```bash
 npm install
-```
-
-3. Start development server:
-```bash
 npm run dev
 ```
 
-4. Build for production:
+## Server-side scraper (Next.js)
+
+`/api/scraper` is the JavaScript translation of the old `scrapper.php` flow:
+1. fetch login page and CSRF token,
+2. login to Jagolink,
+3. fetch machine page,
+4. parse machine table and return JSON payload.
+
+Set environment variables first:
+
 ```bash
-npm run build
+cp .env.example .env.local
 ```
 
-## Environment Variables
+Required:
+- `JAGOLINK_USERNAME`
+- `JAGOLINK_PASSWORD`
 
-Create a `.env` file in the root directory:
+Optional:
+- `SCRAPER_API_KEY` (if set, requests to `/api/scraper` must include `?key=...`)
 
-```env
-VITE_API_URL=your_api_url
-VITE_API_KEY=your_api_key
-```
+## Current data source
 
-## Project Structure
+`src/data/json/default-machines.json` is the temporary source. UI reads domain models from `MachineService`, never raw JSON directly.
 
-```
-laviumhub/
-├── src/
-│   ├── assets/      # Images and static files
-│   ├── components/  # React components
-│   ├── App.jsx     # Main application component
-│   └── main.jsx    # Application entry point
-├── public/         # Public assets
-└── index.html     # HTML template
-```
+## Future source swap
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Contact
-
-- Website: [LaviumHub](https://d-agung.com/laviumhub)
-- WhatsApp: [085117674118](https://wa.me/6285117674118)
-- Instagram: [@laviumhub](https://www.instagram.com/laviumhub)
+To switch source (scraper, DB, CMS), add a new repository implementing `MachineRepository` and wire it in `src/services/index.ts`.

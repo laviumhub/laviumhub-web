@@ -11,10 +11,13 @@ import {
     Title
 } from "@mantine/core"
 import { IconWash, IconWindmill } from "@tabler/icons-react"
-import dryerImg from "../assets/dryer.png"
-import washerImg from "../assets/washer.png"
+import type { RawMachineRecord } from "@/data/types/raw-machine"
 
-export default function MachineTrackers({machines}) {
+type MachineTrackersProps = {
+  machines: RawMachineRecord[]
+}
+
+export default function MachineTrackers({ machines }: MachineTrackersProps) {
   const washers = machines.filter((m) => m.machine_name.includes("Mesin Cuci"))
   const dryers = machines.filter((m) => m.machine_name.includes("Pengering"))
 
@@ -79,7 +82,7 @@ export default function MachineTrackers({machines}) {
                                 }}
                             >
                                 <Image
-                                    src={washerImg}
+                                    src="/assets/washer.png"
                                     alt={m.machine_name}
                                     height={80}
                                     fit="contain"
@@ -170,7 +173,7 @@ export default function MachineTrackers({machines}) {
                                 }}
                             >
                                 <Image
-                                src={dryerImg}
+                                src="/assets/dryer.png"
                                 alt={m.machine_name}
                                 height={105}
                                 fit="contain"

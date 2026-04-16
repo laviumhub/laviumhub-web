@@ -1,6 +1,7 @@
 import "leaflet/dist/leaflet.css";
 import type { LatLng } from "../lib/geo";
 import L from "leaflet";
+import type { LeafletEventHandlerFnMap } from "leaflet";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { useEffect, useRef } from "react";
 import styles from "./DistanceMap.module.css";
@@ -67,23 +68,23 @@ function FitMapView({
 
 function MapPickEvents({
   enabled,
-  onPickOrigin,
+  onPickPoint,
 }: {
   enabled: boolean;
-  onPickOrigin?: (point: LatLng) => void;
+  onPickPoint?: (point: LatLng) => void;
 }) {
   const longPressTimer = useRef<number | null>(null);
   const map = useMapEvents({
     dblclick(event) {
-      if (!enabled || !onPickOrigin) return;
-      onPickOrigin({ lat: event.latlng.lat, lng: event.latlng.lng });
+      if (!enabled || !onPickPoint) return;
+      onPickPoint({ lat: event.latlng.lat, lng: event.latlng.lng });
     },
-    touchstart(event) {
-      if (!enabled || !onPickOrigin) return;
+    touchstart(event: any) {
+      if (!enabled || !onPickPoint) return;
       if (longPressTimer.current !== null) window.clearTimeout(longPressTimer.current);
       const { lat, lng } = event.latlng;
       longPressTimer.current = window.setTimeout(() => {
-        onPickOrigin({ lat, lng });
+        onPickPoint({ lat, lng });
         longPressTimer.current = null;
       }, 550);
     },
@@ -105,7 +106,7 @@ function MapPickEvents({
         longPressTimer.current = null;
       }
     },
-  });
+  } as LeafletEventHandlerFnMap);
 
   useEffect(() => {
     return () => {
@@ -171,6 +172,9 @@ export default function DistanceMap({
   destinationPopupLabel,
   allowPickOrigin = false,
   onPickOrigin,
+  pickTarget = "origin",
+  onPickDestination,
+  swapMarkerColors = false,
   fitAfterPickToken = 0,
 }: {
   origin: LatLng;
@@ -181,6 +185,9 @@ export default function DistanceMap({
   destinationPopupLabel: string;
   allowPickOrigin?: boolean;
   onPickOrigin?: (point: LatLng) => void;
+  pickTarget?: "origin" | "destination";
+  onPickDestination?: (point: LatLng) => void;
+  swapMarkerColors?: boolean;
   fitAfterPickToken?: number;
 }) {
   const center = allowPickOrigin ? origin : destination ?? origin;
@@ -215,19 +222,28 @@ export default function DistanceMap({
           suspendAutoFit={allowPickOrigin}
         />
         <FitAfterPick token={fitAfterPickToken} origin={origin} destination={destination} />
-        <MapPickEvents enabled={allowPickOrigin} onPickOrigin={onPickOrigin} />
+        <MapPickEvents
+          enabled={allowPickOrigin}
+          onPickPoint={pickTarget === "destination" ? onPickDestination : onPickOrigin}
+        />
         <TileLayer
           attribution='&copy; OpenStreetMap'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <Marker position={[origin.lat, origin.lng]} icon={OriginIcon}>
+        <Marker
+          position={[origin.lat, origin.lng]}
+          icon={swapMarkerColors ? DestinationIcon : OriginIcon}
+        >
           <Popup>{originPopupLabel}</Popup>
         </Marker>
 
         {destination && (
           <>
-            <Marker position={[destination.lat, destination.lng]} icon={DestinationIcon}>
+            <Marker
+              position={[destination.lat, destination.lng]}
+              icon={swapMarkerColors ? OriginIcon : DestinationIcon}
+            >
               <Popup>{destinationPopupLabel}</Popup>
             </Marker>
             {polylinePositions && <Polyline positions={polylinePositions} />}

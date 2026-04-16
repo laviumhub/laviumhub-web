@@ -1,5 +1,4 @@
 import { Box, Flex, Group, Image } from '@mantine/core'
-import laviumLogo from "../assets/lavium-logo.png"
 
 const Header = () => {
   return (
@@ -13,7 +12,7 @@ const Header = () => {
         <Flex align="center" justify="space-between" px={{ base: "md", md: "xl" }} py="md">
             <Group gap="md">
                 <Image
-                    src={laviumLogo}
+                    src="/assets/lavium-logo.png"
                     alt="LaviumHub Logo"
                     height={45}
                     style={{

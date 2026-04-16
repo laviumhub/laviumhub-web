@@ -29,11 +29,16 @@ export function parseOsrmRoute(data: OsrmResponse): RouteState {
     throw new Error("Route not available");
   }
 
-  const validRoutes = data.routes.filter((route) => route.geometry?.coordinates?.length >= 2);
+  const validRoutes = data.routes.filter((route) => {
+    const coordinates = route.geometry?.coordinates;
+    return Array.isArray(coordinates) && coordinates.length >= 2;
+  });
   if (!validRoutes.length) throw new Error("Route geometry not available");
 
   const route = validRoutes[0];
-  const coords = route.geometry!.coordinates;
+  if (!route) throw new Error("Route geometry not available");
+  const coords = route.geometry?.coordinates;
+  if (!coords) throw new Error("Route geometry not available");
 
   return {
     distanceKm: route.distance / 1000,

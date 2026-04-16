@@ -1,0 +1,19 @@
+:root {
+  --lavium-background: #fafafa;
+  --lavium-surface: #ffffff;
+  --lavium-border: #900000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: linear-gradient(180deg, #fff7f7 0%, var(--lavium-background) 100%);
+}
