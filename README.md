@@ -58,6 +58,44 @@ Supabase credentials are prepared in `.env.example` for upcoming admin/auth/data
 
 For deployment platforms (for example Netlify), set these in the platform Environment Variables UI.
 
+## Admin login foundation (server-side)
+
+Current flow:
+
+- Frontend login form calls `POST /api/admin/auth/login`.
+- Backend route validates credentials against `public.users` in Supabase.
+- On success, backend sets an `httpOnly` signed session cookie.
+- `src/proxy.ts` enforces login for all `/admin/*` routes except `/admin/login`.
+
+### Migration
+
+Apply migration:
+
+- `supabase/migrations/20260422_000001_create_users.sql`
+
+The table is:
+
+- `uid` (UUID, PK)
+- `username` (unique)
+- `name`
+- `password`
+- `created_date`
+
+### Seed example (manual SQL)
+
+```sql
+-- one-time: create bcrypt hash in SQL via pgcrypto
+insert into public.users (username, name, password)
+values ('admin', 'Admin LaviumHub', crypt('admin123', gen_salt('bf', 12)));
+```
+This login foundation now verifies password using bcrypt hash comparison in backend API.
+
+Optional local helper to generate hash:
+
+```bash
+npm run hash:password -- admin123
+```
+
 ## Current data source
 
 - `src/data/json/default-machines.json`: temporary fallback machine snapshot.

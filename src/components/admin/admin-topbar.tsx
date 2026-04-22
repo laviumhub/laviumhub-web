@@ -1,4 +1,7 @@
-import { Badge, Burger, Group, Text } from "@mantine/core";
+"use client";
+
+import { useRouter } from "next/navigation";
+import { Badge, Burger, Button, Group, Text } from "@mantine/core";
 
 type AdminTopbarProps = {
   mobileNavOpened: boolean;
@@ -6,6 +9,14 @@ type AdminTopbarProps = {
 };
 
 export function AdminTopbar({ mobileNavOpened, onToggleMobileNav }: AdminTopbarProps) {
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/admin/auth/logout", { method: "POST" });
+    router.replace("/admin/login");
+    router.refresh();
+  }
+
   return (
     <Group justify="space-between" px={{ base: "sm", md: "md" }} h="100%">
       <Group gap="sm">
@@ -23,6 +34,9 @@ export function AdminTopbar({ mobileNavOpened, onToggleMobileNav }: AdminTopbarP
       <Badge variant="light" color="red" visibleFrom="sm">
         Internal
       </Badge>
+      <Button variant="light" color="red" size="xs" onClick={handleLogout}>
+        Logout
+      </Button>
     </Group>
   );
 }

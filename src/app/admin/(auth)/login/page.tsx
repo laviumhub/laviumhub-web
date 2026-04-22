@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Card, Stack, Text, Title } from "@mantine/core";
 
 import { AdminLoginForm } from "@/components/admin/admin-login-form";
@@ -13,7 +14,9 @@ export default function AdminLoginPage() {
           <Text c="dimmed" size="sm" ta="center">
             Temporary login flow. Real authentication will be added in a later phase.
           </Text>
-          <AdminLoginForm />
+          <Suspense fallback={null}>
+            <AdminLoginForm />
+          </Suspense>
         </Stack>
       </Card>
     </Stack>
