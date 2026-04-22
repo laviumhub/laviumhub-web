@@ -1,6 +1,6 @@
 # LaviumHub (Next.js + TypeScript)
 
-Modernized frontend scaffold with Next.js App Router, TypeScript, Mantine, and a clean data abstraction layer.
+Modernized frontend scaffold with Next.js App Router, TypeScript, Mantine, and a practical feature-first structure.
 
 ## Stack
 
@@ -11,13 +11,14 @@ Modernized frontend scaffold with Next.js App Router, TypeScript, Mantine, and a
 
 ## Architecture
 
-- `src/app`: App Router entrypoints, layout, providers.
-- `src/ui`: reusable UI shell/components.
-- `src/features`: feature-facing presentation modules.
-- `src/domain`: app-level models/interfaces.
-- `src/data`: source-specific raw types, json sources, and mappers.
+- `src/app`: App Router entrypoints (`(public)`, `(admin)`, `api`), root layout, providers.
+- `src/features/public-home`: public homepage UI modules.
+- `src/features/delivery`: delivery calculator feature modules.
+- `src/features/admin`: admin preparation modules (banner area reserved for next phase).
+- `src/domain`: shared domain models/interfaces.
+- `src/data`: static JSON sources, raw types, and mappers.
 - `src/repositories`: repository contracts and implementations.
-- `src/services`: use-case/services consumed by pages.
+- `src/services`: use-case/services consumed by app modules.
 - `src/lib`: shared utilities and theme.
 
 ## Run
@@ -50,8 +51,17 @@ Optional:
 
 ## Current data source
 
-`src/data/json/default-machines.json` is the temporary source. UI reads domain models from `MachineService`, never raw JSON directly.
+- `src/data/json/default-machines.json`: temporary fallback machine snapshot.
+- `src/data/content/services.json`: homepage services content.
+- `src/data/content/delivery-engine.json`: delivery rule config.
 
 ## Future source swap
 
 To switch source (scraper, DB, CMS), add a new repository implementing `MachineRepository` and wire it in `src/services/index.ts`.
+
+## Planned next phase (not implemented yet)
+
+- Internal admin auth and role guard.
+- Homepage banner CRUD in `src/features/admin/banners`.
+- Supabase integration (auth, database, storage).
+- Scraper output persistence to database (replace JSON fallback flow).

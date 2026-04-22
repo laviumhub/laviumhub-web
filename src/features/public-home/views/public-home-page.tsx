@@ -20,15 +20,16 @@ import { useMediaQuery } from "@mantine/hooks"
 import { notifications } from "@mantine/notifications"
 import { IconInfoCircle } from "@tabler/icons-react"
 import dayjs from "dayjs"
+import Image from "next/image"
 import 'dayjs/locale/id'
 import { useEffect, useState } from "react"
 import type { RawMachineRecord } from "@/data/types/raw-machine"
-import Delivery from "./Delivery"
-import DEFAULT_MACHINES from "./data/DEFAULT_MACHINES.json"
-import MachineTrackers from "./informations/MachineTrackers"
-import ServicesContent from "./services/ServicesContent"
-import Footer from "./shared/Footer"
-import Header from "./shared/Header"
+import { DeliveryTab } from "@/features/delivery/views/delivery-tab"
+import DEFAULT_MACHINES from "@/data/json/default-machines.json"
+import { MachineTrackers } from "@/features/public-home/components/machine-trackers"
+import { ServicesContent } from "@/features/public-home/components/services-content"
+import { PublicFooter } from "@/features/public-home/components/public-footer"
+import { PublicHeader } from "@/features/public-home/components/public-header"
 dayjs.locale('id')
 
 const STORY_SLIDE_MS = 5000
@@ -56,7 +57,7 @@ const tabs = [
   { key: 'antar-jemput', label: 'Antar Jemput'}
 ]
 
-export default function App() {
+export function PublicHomePage() {
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
@@ -250,7 +251,7 @@ export default function App() {
         }
       `}</style>
 
-      <Header />
+      <PublicHeader />
       <Modal
         opened={isMachineModalOpen}
         onClose={() => setIsMachineModalOpen(false)}
@@ -341,12 +342,13 @@ export default function App() {
               )
             })}
           </Box>
-          <img
-            src={storyImages[storyIndex]}
+          <Image
+            src={storyImages[storyIndex] ?? "/thumbnail.png"}
             alt={`Promo Mesin LaviumHub ${storyIndex + 1}`}
+            fill
+            unoptimized
+            sizes="(max-width: 768px) 100vw, 484px"
             style={{
-              width: "100%",
-              height: "100%",
               objectFit: "contain",
               objectPosition: "center",
             }}
@@ -742,14 +744,14 @@ export default function App() {
               }
 
               {activeTab === 'antar-jemput' &&
-                <Delivery />
+                <DeliveryTab />
               }
             </GridCol>
           </Grid>
         </Container>
       </Box>
       
-      <Footer />
+      <PublicFooter />
     </AppShell>
   )
 }

@@ -17,7 +17,7 @@ type MachineTrackersProps = {
   machines: RawMachineRecord[]
 }
 
-export default function MachineTrackers({ machines }: MachineTrackersProps) {
+export function MachineTrackers({ machines }: MachineTrackersProps) {
   const washers = machines.filter((m) => m.machine_name.includes("Mesin Cuci"))
   const dryers = machines.filter((m) => m.machine_name.includes("Pengering"))
 

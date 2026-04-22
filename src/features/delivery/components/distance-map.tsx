@@ -1,10 +1,11 @@
 import "leaflet/dist/leaflet.css";
-import type { LatLng } from "../lib/geo";
+import type { LatLng } from "@/lib/geo";
 import L from "leaflet";
 import type { LeafletEventHandlerFnMap } from "leaflet";
+import type { LeafletMouseEvent } from "leaflet";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from "react-leaflet";
 import { useEffect, useRef } from "react";
-import styles from "./DistanceMap.module.css";
+import styles from "./distance-map.module.css";
 
 function buildPinSvg(color: string) {
   const svg = `
@@ -74,12 +75,12 @@ function MapPickEvents({
   onPickPoint?: (point: LatLng) => void;
 }) {
   const longPressTimer = useRef<number | null>(null);
-  const map = useMapEvents({
+  useMapEvents({
     dblclick(event) {
       if (!enabled || !onPickPoint) return;
       onPickPoint({ lat: event.latlng.lat, lng: event.latlng.lng });
     },
-    touchstart(event: any) {
+    touchstart(event: LeafletMouseEvent) {
       if (!enabled || !onPickPoint) return;
       if (longPressTimer.current !== null) window.clearTimeout(longPressTimer.current);
       const { lat, lng } = event.latlng;

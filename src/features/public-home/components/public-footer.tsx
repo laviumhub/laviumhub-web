@@ -1,7 +1,7 @@
 import { Box, Container, Grid, Group, Image, Stack, Text } from '@mantine/core'
-import { IconBrandFacebook, IconBrandInstagram, IconBrandTiktok, IconBrandWhatsapp, IconMapPin, IconPin, IconPinned } from "@tabler/icons-react"
+import { IconBrandFacebook, IconBrandInstagram, IconBrandTiktok, IconBrandWhatsapp, IconMapPin } from "@tabler/icons-react"
 
-const Footer = () => {
+export function PublicFooter() {
   return (
     <Box
         style={{
@@ -81,5 +81,3 @@ const Footer = () => {
     </Box>
   )
 }
-
-export default Footer

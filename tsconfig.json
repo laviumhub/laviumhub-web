@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "target": "ES2022",
     "lib": ["dom", "dom.iterable", "es2022"],
     "allowJs": false,
@@ -21,17 +22,8 @@
   },
   "include": [
     "next-env.d.ts",
-    "src/app/**/*.ts",
-    "src/app/**/*.tsx",
-    "src/domain/**/*.ts",
-    "src/data/**/*.ts",
-    "src/repositories/**/*.ts",
-    "src/services/**/*.ts",
-    "src/lib/theme/**/*.ts",
-    "src/features/**/*.ts",
-    "src/features/**/*.tsx",
-    "src/ui/**/*.ts",
-    "src/ui/**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

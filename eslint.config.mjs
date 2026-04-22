@@ -7,24 +7,12 @@ export default tseslint.config(
       ".next/**",
       "node_modules/**",
       "dist/**",
-      "scripts/**",
-      "src/components/**",
-      "src/lib/delivery-engine/**",
-      "src/Delivery.tsx"
+      "scripts/**"
     ]
   },
   ...tseslint.configs.recommended,
   {
-    files: [
-      "src/app/**/*.{ts,tsx}",
-      "src/domain/**/*.ts",
-      "src/data/**/*.ts",
-      "src/repositories/**/*.ts",
-      "src/services/**/*.ts",
-      "src/lib/theme/**/*.ts",
-      "src/features/**/*.{ts,tsx}",
-      "src/ui/**/*.{ts,tsx}"
-    ],
+    files: ["src/**/*.{ts,tsx}"],
     plugins: {
       "@next/next": nextPlugin
     },

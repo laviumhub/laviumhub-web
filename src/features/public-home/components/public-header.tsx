@@ -1,6 +1,6 @@
 import { Box, Flex, Group, Image } from '@mantine/core'
 
-const Header = () => {
+export function PublicHeader() {
   return (
     <Box
         style={{
@@ -25,5 +25,3 @@ const Header = () => {
     </Box>
   )
 }
-
-export default Header

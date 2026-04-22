@@ -1,4 +1,4 @@
-import type { LatLng } from "../geo";
+import type { LatLng } from "@/lib/geo";
 import type { OsrmResponse, RouteState } from "./types";
 
 export function buildOsrmRouteUrl(

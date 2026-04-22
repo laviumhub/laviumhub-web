@@ -1,4 +1,4 @@
-import rawDeliveryEngineConfig from "../../data/DELIVERY_ENGINE.json";
+import rawDeliveryEngineConfig from "@/data/content/delivery-engine.json";
 import type { DeliveryEngineConfig } from "./types";
 
 export function getDeliveryEngineConfig(): DeliveryEngineConfig {

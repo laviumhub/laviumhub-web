@@ -2,7 +2,7 @@ import { Carousel } from "@mantine/carousel"
 import { Badge, Blockquote, Card, Grid, GridCol, Group, Image, Stack, Text, Title } from "@mantine/core"
 import Autoplay from 'embla-carousel-autoplay'
 import { useRef } from "react"
-import SERVICES_DATA from "../data/SERVICES_DATA.json"
+import SERVICES_DATA from "@/data/content/services.json"
 
 type ServiceContent = {
   id: string
@@ -92,7 +92,7 @@ function ServiceCard({ service }: ServiceCardProps) {
   )
 }
 
-export default function ServicesContent() {
+export function ServicesContent() {
   const services = SERVICES_DATA as ServiceContent[]
 
   return (

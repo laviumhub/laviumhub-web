@@ -23,19 +23,19 @@ import {
   getActiveRules,
   getBusinessDestination,
   getDeliveryEngineConfig,
-} from "./lib/delivery-engine/config";
+} from "@/features/delivery/lib/config";
 import {
   distanceKmToMeters,
   evaluateDeliveryDecision,
   findMatchedDeliveryRule,
   formatCurrencyIdr,
-} from "./lib/delivery-engine/evaluate";
-import { buildOsrmRouteUrl, parseOsrmRoute } from "./lib/delivery-engine/routing";
-import type { DeliveryEngineConfig, OsrmResponse, RouteState } from "./lib/delivery-engine/types";
-import type { LatLng } from "./lib/geo";
-import { haversineKm } from "./lib/geo";
+} from "@/features/delivery/lib/evaluate";
+import { buildOsrmRouteUrl, parseOsrmRoute } from "@/features/delivery/lib/routing";
+import type { DeliveryEngineConfig, OsrmResponse, RouteState } from "@/features/delivery/lib/types";
+import type { LatLng } from "@/lib/geo";
+import { haversineKm } from "@/lib/geo";
 
-const DistanceMap = dynamic(() => import("./components/DistanceMap"), {
+const DistanceMap = dynamic(() => import("@/features/delivery/components/distance-map"), {
   ssr: false,
 });
 
@@ -139,7 +139,7 @@ const MESSAGES: Record<Language, Messages> = {
   },
 };
 
-export default function Delivery() {
+export function DeliveryTab() {
   const isMobile = useMediaQuery("(max-width: 768px)");
   const config = useMemo<DeliveryEngineConfig>(() => getDeliveryEngineConfig(), []);
   const engineEnabled = config.features.deliveryRuleEngine;

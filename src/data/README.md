@@ -1,6 +1,7 @@
 # Data Layer
 
 - `json/`: temporary static source.
+- `content/`: static content/config used by public features.
 - `types/`: source-specific raw interfaces.
 - `mappers/`: raw-to-domain normalization.
 
