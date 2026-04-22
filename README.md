@@ -49,6 +49,15 @@ Required:
 Optional:
 - `SCRAPER_API_KEY` (if set, requests to `/api/scraper` must include `?key=...`)
 
+## Supabase env preparation
+
+Supabase credentials are prepared in `.env.example` for upcoming admin/auth/database work:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only, never expose to client)
+
+For deployment platforms (for example Netlify), set these in the platform Environment Variables UI.
+
 ## Current data source
 
 - `src/data/json/default-machines.json`: temporary fallback machine snapshot.
