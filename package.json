@@ -4,10 +4,7 @@
   "version": "1.0.0",
   "author": "laviumhub team",
   "scripts": {
-    "generate:ads-manifest": "node scripts/generate-advertisements-manifest.mjs",
     "hash:password": "node scripts/hash-password.mjs",
-    "predev": "npm run generate:ads-manifest",
-    "prebuild": "npm run generate:ads-manifest",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

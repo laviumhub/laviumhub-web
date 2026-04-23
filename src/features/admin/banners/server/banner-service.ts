@@ -247,6 +247,11 @@ export async function deleteBanner(id: string): Promise<void> {
 }
 
 export async function getActiveBanner(): Promise<Banner | null> {
+  const banners = await getActiveBanners();
+  return banners[0] ?? null;
+}
+
+export async function getActiveBanners(): Promise<Banner[]> {
   const supabase = getSupabaseServerClient();
   const nowIso = new Date().toISOString();
 
@@ -258,12 +263,11 @@ export async function getActiveBanner(): Promise<Banner | null> {
     .or(`end_at.is.null,end_at.gte.${nowIso}`)
     .order("active_order", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order("id", { ascending: true });
 
   if (error) {
-    throw new Error(`Failed to fetch active banner: ${error.message}`);
+    throw new Error(`Failed to fetch active banners: ${error.message}`);
   }
 
-  return data ? mapRowToBanner(data as BannerRow) : null;
+  return (data ?? []).map((row) => mapRowToBanner(row as BannerRow));
 }

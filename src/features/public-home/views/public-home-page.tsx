@@ -22,7 +22,7 @@ import { IconInfoCircle } from "@tabler/icons-react"
 import dayjs from "dayjs"
 import Image from "next/image"
 import 'dayjs/locale/id'
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import type { RawMachineRecord } from "@/data/types/raw-machine"
 import { DeliveryTab } from "@/features/delivery/views/delivery-tab"
 import DEFAULT_MACHINES from "@/data/json/default-machines.json"
@@ -53,7 +53,7 @@ type ActiveBanner = {
 
 type ActiveBannerResponse = {
   ok: boolean
-  data?: ActiveBanner | null
+  data?: ActiveBanner[]
 }
 
 const tabs = [
@@ -67,11 +67,16 @@ export function PublicHomePage() {
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
   const [machines, setMachines] = useState<RawMachineRecord[]>(DEFAULT_MACHINES as RawMachineRecord[])
-  const [activeBanner, setActiveBanner] = useState<ActiveBanner | null>(null)
+  const [activeBanners, setActiveBanners] = useState<ActiveBanner[]>([])
+  const [activeBannerIndex, setActiveBannerIndex] = useState(0)
   const [isBannerModalOpen, setIsBannerModalOpen] = useState(false)
+  const [bannerProgress, setBannerProgress] = useState(0)
+  const [isBannerCooldown, setIsBannerCooldown] = useState(false)
+  const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hideStoryModalCloseButton =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("config") === "wob"
+  const activeBanner = activeBanners[activeBannerIndex] ?? null
 
   const total = machines.length
   const available = machines.filter((m) => m.state === "MATI").length
@@ -108,34 +113,92 @@ export function PublicHomePage() {
   useEffect(() => {
     let stopped = false
 
-    const loadActiveBanner = async () => {
+    const loadActiveBanners = async () => {
       try {
         const response = await fetch("/api/banners/active", { cache: "no-store" })
-        if (!response.ok) throw new Error(`Failed to load active banner (${response.status})`)
+        if (!response.ok) throw new Error(`Failed to load active banners (${response.status})`)
         const payload = (await response.json()) as ActiveBannerResponse
         if (stopped) return
-        setActiveBanner(payload?.data ?? null)
+        const banners = Array.isArray(payload?.data) ? payload.data : []
+        setActiveBanners(banners)
+        setActiveBannerIndex((prev) => (banners.length === 0 ? 0 : Math.min(prev, banners.length - 1)))
       } catch (error) {
         console.error(error)
         if (stopped) return
-        setActiveBanner(null)
+        setActiveBanners([])
+        setActiveBannerIndex(0)
       }
     }
 
-    void loadActiveBanner()
+    void loadActiveBanners()
+    const refreshInterval = setInterval(() => {
+      void loadActiveBanners()
+    }, 120000)
 
     return () => {
       stopped = true
+      clearInterval(refreshInterval)
+      if (cooldownTimerRef.current) {
+        clearTimeout(cooldownTimerRef.current)
+        cooldownTimerRef.current = null
+      }
     }
   }, [])
 
+  const startBannerCooldown = () => {
+    if (cooldownTimerRef.current) {
+      clearTimeout(cooldownTimerRef.current)
+      cooldownTimerRef.current = null
+    }
+    setIsBannerModalOpen(false)
+    setBannerProgress(0)
+    setIsBannerCooldown(true)
+    cooldownTimerRef.current = setTimeout(() => {
+      setIsBannerCooldown(false)
+      setActiveBannerIndex(0)
+    }, 120000)
+  }
+
   useEffect(() => {
-    if (activeTab !== "informasi" || !activeBanner) {
+    if (activeTab !== "informasi" || !activeBanner || isBannerCooldown) {
       setIsBannerModalOpen(false)
+      setBannerProgress(0)
       return
     }
     setIsBannerModalOpen(true)
-  }, [activeTab, activeBanner])
+  }, [activeTab, activeBanner, isBannerCooldown])
+
+  useEffect(() => {
+    if (!isBannerModalOpen || !activeBanner) return
+
+    const durationMs = 12000
+    const startedAt = Date.now()
+    let frameId: number | null = null
+
+    const run = () => {
+      const elapsed = Date.now() - startedAt
+      const progress = Math.min(100, (elapsed / durationMs) * 100)
+      setBannerProgress(progress)
+      if (elapsed >= durationMs) {
+        if (activeBannerIndex < activeBanners.length - 1) {
+          setActiveBannerIndex((prev) => prev + 1)
+          setBannerProgress(0)
+        } else {
+          startBannerCooldown()
+        }
+        return
+      }
+      frameId = window.requestAnimationFrame(run)
+    }
+
+    setBannerProgress(0)
+    frameId = window.requestAnimationFrame(run)
+
+    return () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId)
+      setBannerProgress(0)
+    }
+  }, [activeBanner, activeBannerIndex, activeBanners.length, isBannerModalOpen])
 
   return (
     <AppShell
@@ -199,7 +262,7 @@ export function PublicHomePage() {
       <PublicHeader />
       <Modal
         opened={isBannerModalOpen}
-        onClose={() => setIsBannerModalOpen(false)}
+        onClose={startBannerCooldown}
         withCloseButton={!hideStoryModalCloseButton}
         closeOnClickOutside={!hideStoryModalCloseButton}
         closeOnEscape={!hideStoryModalCloseButton}
@@ -212,13 +275,15 @@ export function PublicHomePage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            padding: "16px",
+            padding: isMobile ? "6px" : "16px",
           },
           body: { padding: 0, height: "100%" },
           content: {
             backgroundColor: "#000",
-            height: "min(calc(100vh - 32px), 860px)",
-            width: "min(calc((100vh - 32px) * 0.5625), calc(100vw - 32px), 484px)",
+            height: isMobile ? "calc(100vh - 12px)" : "min(calc(100vh - 32px), 860px)",
+            width: isMobile
+              ? "min(calc((100vh - 12px) * 0.5625), calc(100vw - 12px))"
+              : "min(calc((100vh - 32px) * 0.5625), calc(100vw - 32px), 484px)",
             maxWidth: "100%",
             overflow: "hidden",
             margin: 0,
@@ -249,6 +314,20 @@ export function PublicHomePage() {
               position: "relative",
             }}
           >
+            {activeBanner ? (
+              <Box
+                style={{
+                  position: "absolute",
+                  top: 12,
+                  left: 12,
+                  right: 12,
+                  zIndex: 3,
+                  height: 3,
+                  borderRadius: 999,
+                  background: `linear-gradient(to right, rgba(255,255,255,0.95) ${bannerProgress}%, rgba(255,255,255,0.28) ${bannerProgress}%)`,
+                }}
+              />
+            ) : null}
             <Box style={{ position: "relative", width: "100%", flex: 1 }}>
               {activeBanner ? (
                 <Image
@@ -256,7 +335,7 @@ export function PublicHomePage() {
                   alt={activeBanner.title}
                   fill
                   unoptimized
-                  sizes="(max-width: 768px) 100vw, 484px"
+                  sizes={isMobile ? "calc(100vw - 12px)" : "484px"}
                   style={{
                     objectFit: "contain",
                     objectPosition: "center",
@@ -264,16 +343,6 @@ export function PublicHomePage() {
                 />
               ) : null}
             </Box>
-            {activeBanner ? (
-              <Box px="md" py="sm" style={{ width: "100%", background: "rgba(0, 0, 0, 0.72)" }}>
-                <Text fw={700} c="white">
-                  {activeBanner.title}
-                </Text>
-                <Text size="sm" c="gray.3">
-                  {activeBanner.description || ""}
-                </Text>
-              </Box>
-            ) : null}
         </Box>
       </Modal>
 

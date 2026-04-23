@@ -391,7 +391,7 @@ export function BannerManagement() {
   useEffect(() => {
     if (!previewModalOpen || activePreviewBanners.length === 0) return;
 
-    const durationMs = 5000;
+    const durationMs = 10000;
     const startedAt = Date.now();
     let frameId: number | null = null;
 
