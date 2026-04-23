@@ -74,7 +74,7 @@ const tabs = [
 ]
 
 export function PublicHomePage() {
-  const SCRAPER_REFRESH_MS = 30000
+  const SCRAPER_REFRESH_MS = 240000
   const BANNER_VERSION_POLL_MS = 30000
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
@@ -103,7 +103,7 @@ export function PublicHomePage() {
   const handleInfoClick = () => {
     notifications.show({
       title: 'Informasi',
-      message: 'Data diperbarui otomatis sekitar setiap 30 detik saat tab aktif',
+      message: 'Data diperbarui otomatis sekitar setiap 4 menit saat tab aktif',
       loading: false,
       autoClose: 2000,
     })
