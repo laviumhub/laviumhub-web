@@ -32,10 +32,6 @@ import { PublicFooter } from "@/features/public-home/components/public-footer"
 import { PublicHeader } from "@/features/public-home/components/public-header"
 dayjs.locale('id')
 
-const STORY_SLIDE_MS = 5000
-const STORY_COOLDOWN_MS = 120000
-const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_PATH || "/"
-
 type AppTabKey = "informasi" | "layanan" | "antar-jemput"
 
 type ScraperPayload = {
@@ -43,12 +39,21 @@ type ScraperPayload = {
   timestamp?: string
 }
 
-type AdvertisementManifest = {
-  images?: string[]
+type ActiveBanner = {
+  id: string
+  title: string
+  description: string | null
+  image_url: string
+  is_active: boolean
+  start_at: string
+  end_at: string | null
+  created_at: string
+  updated_at: string
 }
 
-function withBaseUrl(path: string): string {
-  return `${PUBLIC_BASE_URL}${String(path).replace(/^\/+/, "")}`
+type ActiveBannerResponse = {
+  ok: boolean
+  data?: ActiveBanner | null
 }
 
 const tabs = [
@@ -62,10 +67,8 @@ export function PublicHomePage() {
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
   const [machines, setMachines] = useState<RawMachineRecord[]>(DEFAULT_MACHINES as RawMachineRecord[])
-  const [isMachineModalOpen, setIsMachineModalOpen] = useState(false)
-  const [storyIndex, setStoryIndex] = useState(0)
-  const [storyElapsedMs, setStoryElapsedMs] = useState(0)
-  const [storyImages, setStoryImages] = useState<string[]>([])
+  const [activeBanner, setActiveBanner] = useState<ActiveBanner | null>(null)
+  const [isBannerModalOpen, setIsBannerModalOpen] = useState(false)
   const hideStoryModalCloseButton =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("config") === "wob"
@@ -103,94 +106,36 @@ export function PublicHomePage() {
   }, [])
 
   useEffect(() => {
-    let cancelled = false
+    let stopped = false
 
-    const loadAdvertisementImages = async () => {
+    const loadActiveBanner = async () => {
       try {
-        const response = await fetch(withBaseUrl("advertisements/manifest.json"), { cache: "no-store" })
-        if (!response.ok) throw new Error(`Failed to load advertisements manifest (${response.status})`)
-        const payload = (await response.json()) as AdvertisementManifest
-        const images = Array.isArray(payload?.images)
-          ? payload.images.map((imagePath) => withBaseUrl(imagePath))
-          : []
-        if (cancelled) return
-        setStoryImages(images)
+        const response = await fetch("/api/banners/active", { cache: "no-store" })
+        if (!response.ok) throw new Error(`Failed to load active banner (${response.status})`)
+        const payload = (await response.json()) as ActiveBannerResponse
+        if (stopped) return
+        setActiveBanner(payload?.data ?? null)
       } catch (error) {
         console.error(error)
-        if (cancelled) return
-        setStoryImages([])
+        if (stopped) return
+        setActiveBanner(null)
       }
     }
 
-    void loadAdvertisementImages()
+    void loadActiveBanner()
 
     return () => {
-      cancelled = true
+      stopped = true
     }
   }, [])
 
   useEffect(() => {
-    if (activeTab !== "informasi" || storyImages.length === 0) {
-      setIsMachineModalOpen(false)
-      setStoryIndex(0)
-      setStoryElapsedMs(0)
+    if (activeTab !== "informasi" || !activeBanner) {
+      setIsBannerModalOpen(false)
       return
     }
-
-    let slideTimerId: number | undefined
-    let reopenTimerId: number | undefined
-    let progressIntervalId: number | undefined
-    let stopped = false
-    let slideStartedAt = Date.now()
-
-    const startProgressTick = () => {
-      window.clearInterval(progressIntervalId)
-      progressIntervalId = window.setInterval(() => {
-        const elapsed = Date.now() - slideStartedAt
-        setStoryElapsedMs(Math.min(elapsed, STORY_SLIDE_MS))
-      }, 80)
-    }
-
-    const runSlide = (index: number) => {
-      if (stopped) return
-
-      setStoryIndex(index)
-      setStoryElapsedMs(0)
-      slideStartedAt = Date.now()
-      startProgressTick()
-
-      slideTimerId = window.setTimeout(() => {
-        if (stopped) return
-
-        if (index < storyImages.length - 1) {
-          runSlide(index + 1)
-          return
-        }
-
-        setIsMachineModalOpen(false)
-        setStoryIndex(0)
-        setStoryElapsedMs(0)
-        window.clearInterval(progressIntervalId)
-        reopenTimerId = window.setTimeout(runModalLoop, STORY_COOLDOWN_MS)
-      }, STORY_SLIDE_MS)
-    }
-
-    const runModalLoop = () => {
-      if (stopped) return
-
-      setIsMachineModalOpen(true)
-      runSlide(0)
-    }
-
-    runModalLoop()
-
-    return () => {
-      stopped = true
-      window.clearTimeout(slideTimerId)
-      window.clearTimeout(reopenTimerId)
-      window.clearInterval(progressIntervalId)
-    }
-  }, [activeTab, storyImages])
+    setIsBannerModalOpen(true)
+  }, [activeTab, activeBanner])
 
   return (
     <AppShell
@@ -253,8 +198,8 @@ export function PublicHomePage() {
 
       <PublicHeader />
       <Modal
-        opened={isMachineModalOpen}
-        onClose={() => setIsMachineModalOpen(false)}
+        opened={isBannerModalOpen}
+        onClose={() => setIsBannerModalOpen(false)}
         withCloseButton={!hideStoryModalCloseButton}
         closeOnClickOutside={!hideStoryModalCloseButton}
         closeOnEscape={!hideStoryModalCloseButton}
@@ -292,67 +237,43 @@ export function PublicHomePage() {
           },
         }}
       >
-        <Box
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#000",
-            position: "relative",
-          }}
-        >
           <Box
             style={{
-              position: "absolute",
-              top: 10,
-              left: 10,
-              right: hideStoryModalCloseButton ? 10 : 56,
-              zIndex: 2,
+              width: "100%",
+              height: "100%",
               display: "flex",
-              gap: 6,
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#000",
+              position: "relative",
             }}
           >
-            {storyImages.map((_, index) => {
-              let ratio = 0
-              if (index < storyIndex) ratio = 1
-              if (index === storyIndex) ratio = storyElapsedMs / STORY_SLIDE_MS
-
-              return (
-                <Box
-                  key={`story-progress-${index}`}
+            <Box style={{ position: "relative", width: "100%", flex: 1 }}>
+              {activeBanner ? (
+                <Image
+                  src={activeBanner.image_url || "/thumbnail.png"}
+                  alt={activeBanner.title}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 484px"
                   style={{
-                    flex: 1,
-                    height: 4,
-                    borderRadius: 999,
-                    backgroundColor: "rgba(255,255,255,0.35)",
-                    overflow: "hidden",
+                    objectFit: "contain",
+                    objectPosition: "center",
                   }}
-                >
-                  <Box
-                    style={{
-                      width: `${Math.max(0, Math.min(1, ratio)) * 100}%`,
-                      height: "100%",
-                      backgroundColor: "#fff",
-                      transition: "width 80ms linear",
-                    }}
-                  />
-                </Box>
-              )
-            })}
-          </Box>
-          <Image
-            src={storyImages[storyIndex] ?? "/thumbnail.png"}
-            alt={`Promo Mesin LaviumHub ${storyIndex + 1}`}
-            fill
-            unoptimized
-            sizes="(max-width: 768px) 100vw, 484px"
-            style={{
-              objectFit: "contain",
-              objectPosition: "center",
-            }}
-          />
+                />
+              ) : null}
+            </Box>
+            {activeBanner ? (
+              <Box px="md" py="sm" style={{ width: "100%", background: "rgba(0, 0, 0, 0.72)" }}>
+                <Text fw={700} c="white">
+                  {activeBanner.title}
+                </Text>
+                <Text size="sm" c="gray.3">
+                  {activeBanner.description || ""}
+                </Text>
+              </Box>
+            ) : null}
         </Box>
       </Modal>
 

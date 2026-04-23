@@ -1,10 +1,14 @@
-# Admin Banner Module (Preparation)
+# Admin Banner Module
 
-This folder is reserved for internal admin v1 banner management.
+Implemented scope:
+- authenticated admin CRUD via backend routes
+- active/inactive toggle
+- schedule window (`start_at` / `end_at`)
+- server-side image upload to Supabase Storage
+- public active-banner API for popup rendering
 
-Planned scope for next phase:
-- authenticated CRUD for homepage banner entries
-- ordering and active/inactive state
-- storage-backed image URL metadata
-
-Current phase intentionally keeps this as structure-only preparation.
+Main files:
+- `components/banner-management.tsx`
+- `server/banner-service.ts`
+- `server/banner-storage.ts`
+- `types.ts`

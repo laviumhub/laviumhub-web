@@ -102,6 +102,47 @@ npm run hash:password -- admin123
 - `src/data/content/services.json`: homepage services content.
 - `src/data/content/delivery-engine.json`: delivery rule config.
 
+## Banner management (admin + public)
+
+### Schema migration
+
+- `supabase/migrations/20260422_000002_create_banners.sql`
+
+Table `public.banners`:
+- `id`
+- `title`
+- `description`
+- `image_url`
+- `is_active`
+- `start_at`
+- `end_at`
+- `created_at`
+- `updated_at`
+
+### Storage assumption
+
+- Server-side banner image upload uses Supabase Storage bucket: `banner-images`.
+- Bucket is created automatically by backend route/service if missing.
+- Uploaded files are saved under `banners/YYYY-MM-DD/<uuid>-<filename>`.
+
+### API routes
+
+Admin (requires logged-in admin session cookie):
+- `GET /api/admin/banners`
+- `POST /api/admin/banners`
+- `PUT /api/admin/banners/[id]`
+- `DELETE /api/admin/banners/[id]`
+
+Public:
+- `GET /api/banners/active`
+
+### Active banner logic
+
+A banner is returned by `/api/banners/active` only when:
+- `is_active = true`
+- `start_at <= now`
+- and (`end_at is null` or `now <= end_at`)
+
 ## Future source swap
 
 To switch source (scraper, DB, CMS), add a new repository implementing `MachineRepository` and wire it in `src/services/index.ts`.
