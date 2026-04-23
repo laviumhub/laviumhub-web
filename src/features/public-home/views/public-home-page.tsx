@@ -35,8 +35,13 @@ dayjs.locale('id')
 type AppTabKey = "informasi" | "layanan" | "antar-jemput"
 
 type ScraperPayload = {
-  data?: RawMachineRecord[]
-  timestamp?: string
+  ok?: boolean
+  data?: {
+    device_id: string
+    status: string
+    state: string
+  }[]
+  source_timestamp?: string | null
 }
 
 type ActiveBanner = {
@@ -69,7 +74,7 @@ const tabs = [
 ]
 
 export function PublicHomePage() {
-  const SCRAPER_REFRESH_MS = 180000
+  const SCRAPER_REFRESH_MS = 30000
   const BANNER_VERSION_POLL_MS = 30000
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
@@ -98,7 +103,7 @@ export function PublicHomePage() {
   const handleInfoClick = () => {
     notifications.show({
       title: 'Informasi',
-      message: 'Data akan diperbarui setiap 3 menit',
+      message: 'Data diperbarui otomatis sekitar setiap 30 detik saat tab aktif',
       loading: false,
       autoClose: 2000,
     })
@@ -110,11 +115,24 @@ export function PublicHomePage() {
 
     isScraperFetchInFlightRef.current = true
     try {
-      const res = await fetch('/api/scraper')
+      const res = await fetch('/api/machines/status')
       const data = (await res.json()) as ScraperPayload
-      setMachines(Array.isArray(data.data) ? data.data : (DEFAULT_MACHINES as RawMachineRecord[]))
-      if (data.timestamp) {
-        setLastUpdate(dayjs(data.timestamp).format('DD MMMM YYYY HH:mm:ss'))
+
+      const statusMap = new Map(
+        (Array.isArray(data.data) ? data.data : []).map((row) => [row.device_id, row] as const)
+      )
+      const mergedMachines = (DEFAULT_MACHINES as RawMachineRecord[]).map((machine) => {
+        const latest = statusMap.get(machine.device_id)
+        return {
+          ...machine,
+          status: latest?.status ?? machine.status,
+          state: latest?.state ?? machine.state
+        } satisfies RawMachineRecord
+      })
+
+      setMachines(mergedMachines)
+      if (data.source_timestamp) {
+        setLastUpdate(dayjs(data.source_timestamp).format('DD MMMM YYYY HH:mm:ss'))
       }
     } catch (err) {
       console.error(err)

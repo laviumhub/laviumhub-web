@@ -28,13 +28,14 @@ npm install
 npm run dev
 ```
 
-## Server-side scraper (Next.js)
+## Machine status flow (optimized)
 
-`/api/scraper` is the JavaScript translation of the old `scrapper.php` flow:
-1. fetch login page and CSRF token,
-2. login to Jagolink,
-3. fetch machine page,
-4. parse machine table and return JSON payload.
+Current flow is split for cost efficiency:
+1. background refresh endpoint scrapes Jagolink and writes latest status to Supabase table (`machine_status_latest`),
+2. public API reads from database only (`/api/machines/status`),
+3. client merges status map with static machine catalog (`src/data/json/default-machines.json`).
+
+`/api/scraper` is kept as compatibility endpoint and now reads from database (no heavy scrape).
 
 Set environment variables first:
 
@@ -48,6 +49,39 @@ Required:
 
 Optional:
 - `SCRAPER_API_KEY` (if set, requests to `/api/scraper` must include `?key=...`)
+- `MACHINES_REFRESH_TOKEN` (required for admin force refresh)
+- `MACHINE_REFRESH_JOB_TOKEN` (required for scheduled/internal refresh job)
+- `MACHINE_REFRESH_TIMEZONE` (default `Asia/Jakarta`)
+- `MACHINE_REFRESH_START_HOUR` (default `6`)
+- `MACHINE_REFRESH_END_HOUR` (default `23`)
+
+### Machine status schema migrations
+
+Apply:
+- `supabase/migrations/20260423_000004_create_machine_status_snapshots.sql`
+- `supabase/migrations/20260423_000005_create_machine_status_latest_and_refresh_fn.sql`
+
+### Refresh endpoints
+
+- Public read-only:
+  - `GET /api/machines/status`
+- Admin:
+  - `GET /api/admin/machines/status`
+  - `POST /api/admin/machines/refresh` (admin session + `MACHINES_REFRESH_TOKEN`)
+- Background/scheduler:
+  - `POST /api/internal/machines/refresh` with header `x-machine-refresh-token: <MACHINE_REFRESH_JOB_TOKEN>`
+
+Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled to once every 4 minutes.
+
+### Scheduler (every 4 minutes)
+
+This repo includes Netlify Scheduled Function:
+- `netlify/functions/machine-refresh-cron.js` (`*/4 * * * *`)
+
+The scheduled function calls:
+- `POST /api/internal/machines/refresh`
+
+Refresh outside operational window is skipped by API logic, so safe to schedule all day.
 
 ## Supabase env preparation
 

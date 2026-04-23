@@ -7,6 +7,7 @@ import { NavLink, Stack, Text, ThemeIcon } from "@mantine/core";
 const navItems = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/banner", label: "Banner" },
+  { href: "/admin/machines", label: "Machines" },
   { href: "/admin/services", label: "Services" }
 ];
 
