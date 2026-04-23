@@ -131,13 +131,9 @@ export function PublicHomePage() {
     }
 
     void loadActiveBanners()
-    const refreshInterval = setInterval(() => {
-      void loadActiveBanners()
-    }, 120000)
 
     return () => {
       stopped = true
-      clearInterval(refreshInterval)
       if (cooldownTimerRef.current) {
         clearTimeout(cooldownTimerRef.current)
         cooldownTimerRef.current = null
