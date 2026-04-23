@@ -36,12 +36,15 @@ type AppTabKey = "informasi" | "layanan" | "antar-jemput"
 
 type ScraperPayload = {
   ok?: boolean
+  mode?: "full" | "delta"
+  changed?: boolean
   data?: {
     device_id: string
     status: string
     state: string
+    source_timestamp: string
   }[]
-  source_timestamp?: string | null
+  refresh_timestamp?: string | null
 }
 
 type ActiveBanner = {
@@ -89,6 +92,8 @@ export function PublicHomePage() {
   const scraperIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const bannerVersionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isScraperFetchInFlightRef = useRef(false)
+  const machineRefreshTimestampRef = useRef<string | null>(null)
+  const machineEtagRef = useRef<string | null>(null)
   const isBannerFetchInFlightRef = useRef(false)
   const hasLoadedBannerRef = useRef(false)
   const bannerVersionRef = useRef<string>("")
@@ -115,24 +120,50 @@ export function PublicHomePage() {
 
     isScraperFetchInFlightRef.current = true
     try {
-      const res = await fetch('/api/machines/status')
+      const searchParams = new URLSearchParams()
+      if (machineRefreshTimestampRef.current) {
+        searchParams.set("since", machineRefreshTimestampRef.current)
+      }
+
+      const response = await fetch(`/api/machines/status${searchParams.toString() ? `?${searchParams.toString()}` : ""}`, {
+        headers: machineEtagRef.current
+          ? {
+              "If-None-Match": machineEtagRef.current
+            }
+          : undefined
+      })
+
+      if (response.status === 304) return
+      const etag = response.headers.get("etag")
+      if (etag) {
+        machineEtagRef.current = etag
+      }
+
+      const res = response
       const data = (await res.json()) as ScraperPayload
 
       const statusMap = new Map(
         (Array.isArray(data.data) ? data.data : []).map((row) => [row.device_id, row] as const)
       )
-      const mergedMachines = (DEFAULT_MACHINES as RawMachineRecord[]).map((machine) => {
-        const latest = statusMap.get(machine.device_id)
-        return {
-          ...machine,
-          status: latest?.status ?? machine.status,
-          state: latest?.state ?? machine.state
-        } satisfies RawMachineRecord
-      })
 
-      setMachines(mergedMachines)
-      if (data.source_timestamp) {
-        setLastUpdate(dayjs(data.source_timestamp).format('DD MMMM YYYY HH:mm:ss'))
+      if (statusMap.size > 0) {
+        setMachines((prev) =>
+          prev.map((machine) => {
+            const latest = statusMap.get(machine.device_id)
+            if (!latest) return machine
+
+            return {
+              ...machine,
+              status: latest.status ?? machine.status,
+              state: latest.state ?? machine.state
+            } satisfies RawMachineRecord
+          })
+        )
+      }
+
+      if (data.refresh_timestamp) {
+        machineRefreshTimestampRef.current = data.refresh_timestamp
+        setLastUpdate(dayjs(data.refresh_timestamp).format('DD MMMM YYYY HH:mm:ss'))
       }
     } catch (err) {
       console.error(err)

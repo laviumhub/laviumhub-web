@@ -3,6 +3,8 @@ import "server-only";
 import type { RawMachineRecord } from "@/data/types/raw-machine";
 import { getSupabaseServerClient } from "@/lib/supabase/server-client";
 
+const SNAPSHOT_KEY = "jagolink_machine_status_v1";
+
 export type MachineStatusRow = {
   device_id: string;
   machine_name: string;
@@ -15,6 +17,18 @@ export type MachineStatusRow = {
 export type MachineStatusSnapshot = {
   rows: MachineStatusRow[];
   latestSourceTimestamp: string | null;
+};
+
+export type PublicMachineStatusRow = {
+  device_id: string;
+  status: string;
+  state: string;
+  source_timestamp: string;
+};
+
+export type MachineRefreshMeta = {
+  refreshTimestamp: string | null;
+  etag: string | null;
 };
 
 type RefreshRpcResponse = {
@@ -59,6 +73,55 @@ export async function listMachineStatuses(): Promise<MachineStatusSnapshot> {
   }, null);
 
   return { rows, latestSourceTimestamp };
+}
+
+export async function listPublicMachineStatuses(): Promise<PublicMachineStatusRow[]> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("machine_status_latest")
+    .select("device_id,status,state,source_timestamp")
+    .order("device_id", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch public machine statuses: ${error.message}`);
+  }
+
+  return (data ?? []) as PublicMachineStatusRow[];
+}
+
+export async function listPublicMachineStatusesChangedSince(sinceIso: string): Promise<PublicMachineStatusRow[]> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("machine_status_latest")
+    .select("device_id,status,state,source_timestamp")
+    .gt("source_timestamp", sinceIso)
+    .order("source_timestamp", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch changed machine statuses: ${error.message}`);
+  }
+
+  return (data ?? []) as PublicMachineStatusRow[];
+}
+
+export async function getMachineRefreshMeta(): Promise<MachineRefreshMeta> {
+  const supabase = getSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("machine_status_snapshots")
+    .select("fetched_at")
+    .eq("cache_key", SNAPSHOT_KEY)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to read machine refresh metadata: ${error.message}`);
+  }
+
+  const fetchedAt = data?.fetched_at ? String(data.fetched_at) : null;
+  const etag = fetchedAt ? `W/"machines-${Date.parse(fetchedAt)}"` : null;
+  return {
+    refreshTimestamp: fetchedAt,
+    etag,
+  };
 }
 
 export async function getLatestMachineRefreshTimestampMs(): Promise<number | null> {

@@ -60,6 +60,7 @@ Optional:
 Apply:
 - `supabase/migrations/20260423_000004_create_machine_status_snapshots.sql`
 - `supabase/migrations/20260423_000005_create_machine_status_latest_and_refresh_fn.sql`
+- `supabase/migrations/20260423_000006_optimize_refresh_machine_status_snapshot_fn_updates.sql`
 
 ### Refresh endpoints
 
