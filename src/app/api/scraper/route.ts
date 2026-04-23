@@ -10,6 +10,10 @@ const LOGIN_ACTION_URL = "https://jagolink.id/login_act";
 const TARGET_URL = "https://jagolink.id/others/iot-machine";
 const USER_AGENT = "Mozilla/5.0 (compatible; LaviumHubNextScraper/1.0)";
 
+const SCRAPER_TTL_MS = 2 * 60 * 1000;
+const SCRAPER_STALE_ERROR_TTL_MS = 10 * 60 * 1000;
+const CACHE_CONTROL_HEADER = "public, s-maxage=120, stale-while-revalidate=300";
+
 type ScraperResponse = {
   success: boolean;
   count?: number;
@@ -17,6 +21,14 @@ type ScraperResponse = {
   timestamp: string;
   error?: string;
 };
+
+type CacheState = {
+  payload: ScraperResponse;
+  expiresAt: number;
+};
+
+let scraperCache: CacheState | null = null;
+let scraperInflight: Promise<ScraperResponse> | null = null;
 
 function nowTimestamp(): string {
   const now = new Date();
@@ -145,6 +157,126 @@ function parseMachinesFromHtml(html: string): RawMachineRecord[] {
   return machines;
 }
 
+function withPublicCacheHeaders(payload: ScraperResponse, status = 200) {
+  return NextResponse.json(payload, {
+    status,
+    headers: {
+      "Cache-Control": CACHE_CONTROL_HEADER,
+    },
+  });
+}
+
+function getValidCache(now = Date.now()): ScraperResponse | null {
+  if (!scraperCache) return null;
+  if (scraperCache.expiresAt <= now) return null;
+  return scraperCache.payload;
+}
+
+async function runScrape(username: string, password: string): Promise<ScraperResponse> {
+  const timestamp = nowTimestamp();
+  const jar = new Map<string, string>();
+
+  const loginPageResponse = await fetchWithCookies(
+    LOGIN_URL,
+    {
+      method: "GET",
+      headers: {
+        "user-agent": USER_AGENT,
+      },
+    },
+    jar
+  );
+
+  if (!loginPageResponse.ok) {
+    throw new Error(`Failed to load login page (${loginPageResponse.status})`);
+  }
+
+  mergeCookieJar(jar, getSetCookieHeaders(loginPageResponse.headers));
+  const loginPage = await loginPageResponse.text();
+
+  const token = extractCsrfToken(loginPage);
+  if (!token) {
+    throw new Error("Failed to retrieve CSRF token");
+  }
+
+  const loginPayload = new URLSearchParams({
+    _token: token,
+    username,
+    password,
+  });
+
+  const loginResponse = await fetchWithCookies(
+    LOGIN_ACTION_URL,
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "user-agent": USER_AGENT,
+      },
+      body: loginPayload.toString(),
+    },
+    jar
+  );
+
+  if (!loginResponse.ok) {
+    throw new Error(`Login request failed (${loginResponse.status})`);
+  }
+
+  const targetResponse = await fetchWithCookies(
+    TARGET_URL,
+    {
+      method: "GET",
+      headers: {
+        "user-agent": USER_AGENT,
+      },
+    },
+    jar
+  );
+
+  if (!targetResponse.ok) {
+    throw new Error(`Failed to load machine page (${targetResponse.status})`);
+  }
+
+  const page = await targetResponse.text();
+  if (isLikelyLoginPage(page)) {
+    throw new Error("Login failed: redirected back to login page");
+  }
+
+  const machines = parseMachinesFromHtml(page);
+  if (machines.length === 0) {
+    throw new Error("No machines found: page structure changed or unauthorized");
+  }
+
+  return {
+    success: true,
+    count: machines.length,
+    data: machines,
+    timestamp,
+  } satisfies ScraperResponse;
+}
+
+async function getScrapedMachines(username: string, password: string): Promise<ScraperResponse> {
+  const now = Date.now();
+  const cached = getValidCache(now);
+  if (cached) return cached;
+
+  if (!scraperInflight) {
+    scraperInflight = runScrape(username, password)
+      .then((payload) => {
+        scraperCache = {
+          payload,
+          expiresAt: Date.now() + SCRAPER_TTL_MS,
+        };
+        return payload;
+      })
+      .finally(() => {
+        scraperInflight = null;
+      });
+  }
+
+  return scraperInflight;
+}
+
 export async function GET(request: Request) {
   const timestamp = nowTimestamp();
 
@@ -152,13 +284,13 @@ export async function GET(request: Request) {
   const password = process.env.JAGOLINK_PASSWORD;
 
   if (!username || !password) {
-    return NextResponse.json(
+    return withPublicCacheHeaders(
       {
         success: false,
         error: "Missing JAGOLINK_USERNAME or JAGOLINK_PASSWORD environment variables",
         timestamp,
       } satisfies ScraperResponse,
-      { status: 500 }
+      500
     );
   }
 
@@ -167,109 +299,36 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const apiKey = searchParams.get("key") ?? "";
     if (apiKey !== expectedApiKey) {
-      return NextResponse.json(
+      return withPublicCacheHeaders(
         {
           success: false,
           error: "Forbidden: invalid API key",
           timestamp,
         } satisfies ScraperResponse,
-        { status: 403 }
+        403
       );
     }
   }
 
   try {
-    const jar = new Map<string, string>();
-
-    const loginPageResponse = await fetchWithCookies(
-      LOGIN_URL,
-      {
-      method: "GET",
-      headers: {
-        "user-agent": USER_AGENT,
-      },
-      },
-      jar
-    );
-
-    if (!loginPageResponse.ok) {
-      throw new Error(`Failed to load login page (${loginPageResponse.status})`);
-    }
-
-    mergeCookieJar(jar, getSetCookieHeaders(loginPageResponse.headers));
-    const loginPage = await loginPageResponse.text();
-
-    const token = extractCsrfToken(loginPage);
-    if (!token) {
-      throw new Error("Failed to retrieve CSRF token");
-    }
-
-    const loginPayload = new URLSearchParams({
-      _token: token,
-      username,
-      password,
-    });
-
-    const loginResponse = await fetchWithCookies(
-      LOGIN_ACTION_URL,
-      {
-      method: "POST",
-      headers: {
-        "content-type": "application/x-www-form-urlencoded",
-        "user-agent": USER_AGENT,
-      },
-      body: loginPayload.toString(),
-      },
-      jar
-    );
-
-    if (!loginResponse.ok) {
-      throw new Error(`Login request failed (${loginResponse.status})`);
-    }
-
-    const targetResponse = await fetchWithCookies(
-      TARGET_URL,
-      {
-      method: "GET",
-      headers: {
-        "user-agent": USER_AGENT,
-      },
-      },
-      jar
-    );
-
-    if (!targetResponse.ok) {
-      throw new Error(`Failed to load machine page (${targetResponse.status})`);
-    }
-
-    const page = await targetResponse.text();
-    if (isLikelyLoginPage(page)) {
-      throw new Error("Login failed: redirected back to login page");
-    }
-
-    const machines = parseMachinesFromHtml(page);
-    if (machines.length === 0) {
-      throw new Error("No machines found: page structure changed or unauthorized");
-    }
-
-    return NextResponse.json(
-      {
-        success: true,
-        count: machines.length,
-        data: machines,
-        timestamp,
-      } satisfies ScraperResponse,
-      { status: 200 }
-    );
+    const payload = await getScrapedMachines(username, password);
+    return withPublicCacheHeaders(payload, 200);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown scraper error";
-    return NextResponse.json(
+
+    const staleCache = scraperCache;
+    const staleStillAllowed = staleCache && staleCache.expiresAt + SCRAPER_STALE_ERROR_TTL_MS > Date.now();
+    if (staleStillAllowed) {
+      return withPublicCacheHeaders(staleCache.payload, 200);
+    }
+
+    return withPublicCacheHeaders(
       {
         success: false,
         error: message,
         timestamp,
       } satisfies ScraperResponse,
-      { status: 500 }
+      500
     );
   }
 }

@@ -27,6 +27,7 @@ import {
   IconEye,
   IconPencil,
   IconPlus,
+  IconRefresh,
   IconTrash
 } from "@tabler/icons-react";
 import Image from "next/image";
@@ -37,6 +38,13 @@ type BannerResponse = {
   ok: boolean;
   message?: string;
   data?: Banner[] | Banner | null;
+};
+
+type BannerForceRefreshResponse = {
+  ok: boolean;
+  changed?: boolean;
+  version?: string;
+  message?: string;
 };
 
 type BannerFormState = {
@@ -115,6 +123,10 @@ export function BannerManagement() {
   const [previewProgress, setPreviewProgress] = useState(0);
   const [imagePreviewModalOpen, setImagePreviewModalOpen] = useState(false);
   const [imagePreviewData, setImagePreviewData] = useState<{ url: string; title: string } | null>(null);
+  const [forceRefreshModalOpen, setForceRefreshModalOpen] = useState(false);
+  const [forceRefreshSecret, setForceRefreshSecret] = useState("");
+  const [forceRefreshResult, setForceRefreshResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [isForcingRefresh, setIsForcingRefresh] = useState(false);
   const [bannerToDelete, setBannerToDelete] = useState<Banner | null>(null);
   const [form, setForm] = useState<BannerFormState>(createDefaultFormState());
 
@@ -362,6 +374,38 @@ export function BannerManagement() {
     setPreviewModalOpen(true);
   }
 
+  async function handleForceRefresh() {
+    setIsForcingRefresh(true);
+    setForceRefreshResult(null);
+
+    try {
+      const response = await fetch("/api/admin/banners/refresh", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          secret: forceRefreshSecret.trim()
+        })
+      });
+
+      const payload = (await response.json()) as BannerForceRefreshResponse;
+      if (!response.ok || !payload.ok) {
+        throw new Error(payload.message ?? "Failed to force refresh banner cache.");
+      }
+
+      const message = payload.message ?? (payload.changed ? "Cache version updated." : "No banner changes detected.");
+      setForceRefreshResult({ ok: true, message });
+    } catch (error) {
+      setForceRefreshResult({
+        ok: false,
+        message: error instanceof Error ? error.message : "Failed to force refresh banner cache."
+      });
+    } finally {
+      setIsForcingRefresh(false);
+    }
+  }
+
   function goToPrevPreview() {
     if (!activePreviewBanners.length) return;
     setPreviewIndex((prev) => (prev === 0 ? activePreviewBanners.length - 1 : prev - 1));
@@ -424,15 +468,33 @@ export function BannerManagement() {
     <Stack gap="lg">
       <Group justify="space-between" align="center">
         <Title order={2}>Banner Management</Title>
-        <Button
-          variant="default"
-          leftSection={<IconEye size={16} />}
-          onClick={openPreviewActiveBanner}
-          disabled={isLoading || !hasActiveBannerNow}
-        >
-          Preview Active Banner
-        </Button>
+        <Group gap="xs">
+          <Button
+            variant="default"
+            leftSection={<IconRefresh size={16} />}
+            onClick={() => {
+              setForceRefreshSecret("");
+              setForceRefreshResult(null);
+              setForceRefreshModalOpen(true);
+            }}
+            disabled={isLoading}
+          >
+            Force Refresh Cache
+          </Button>
+          <Button
+            variant="default"
+            leftSection={<IconEye size={16} />}
+            onClick={openPreviewActiveBanner}
+            disabled={isLoading || !hasActiveBannerNow}
+          >
+            Preview Active Banner
+          </Button>
+        </Group>
       </Group>
+
+      <Alert color="yellow" variant="light" icon={<IconAlertCircle size={16} />}>
+        Melakukan perintah ini akan menimbulkan cost komputasi.
+      </Alert>
 
       {errorMessage ? (
         <Alert color="red" icon={<IconAlertCircle size={16} />} variant="light">
@@ -596,6 +658,60 @@ export function BannerManagement() {
           ))}
         </Stack>
       )}
+
+      <Modal
+        opened={forceRefreshModalOpen}
+        onClose={() => {
+          if (isForcingRefresh) return;
+          setForceRefreshModalOpen(false);
+        }}
+        title="Force Refresh Banner Cache"
+        centered
+      >
+        <Stack gap="md">
+          <Alert color="yellow" variant="light" icon={<IconAlertCircle size={16} />}>
+            Melakukan perintah ini akan menimbulkan cost komputasi.
+          </Alert>
+          <Text size="sm" c="dimmed">
+            Cache global akan di-bust hanya jika terdeteksi perubahan banner aktif.
+          </Text>
+          <TextInput
+            label="Token / Password"
+            type="password"
+            value={forceRefreshSecret}
+            onChange={(event) => setForceRefreshSecret(event.currentTarget.value)}
+            required
+          />
+          {forceRefreshResult ? (
+            <Alert
+              color={forceRefreshResult.ok ? "green" : "red"}
+              variant="light"
+              icon={<IconAlertCircle size={16} />}
+            >
+              {forceRefreshResult.message}
+            </Alert>
+          ) : null}
+          <Group justify="flex-end">
+            <Button
+              variant="default"
+              disabled={isForcingRefresh}
+              onClick={() => {
+                setForceRefreshModalOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={isForcingRefresh}
+              onClick={() => void handleForceRefresh()}
+              disabled={!forceRefreshSecret.trim()}
+            >
+              Verify & Refresh
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={formModalOpen}

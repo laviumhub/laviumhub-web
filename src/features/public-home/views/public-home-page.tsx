@@ -54,6 +54,12 @@ type ActiveBanner = {
 type ActiveBannerResponse = {
   ok: boolean
   data?: ActiveBanner[]
+  version?: string
+}
+
+type BannerVersionResponse = {
+  ok: boolean
+  version?: string
 }
 
 const tabs = [
@@ -63,6 +69,8 @@ const tabs = [
 ]
 
 export function PublicHomePage() {
+  const SCRAPER_REFRESH_MS = 180000
+  const BANNER_VERSION_POLL_MS = 30000
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
@@ -73,6 +81,12 @@ export function PublicHomePage() {
   const [bannerProgress, setBannerProgress] = useState(0)
   const [isBannerCooldown, setIsBannerCooldown] = useState(false)
   const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const scraperIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const bannerVersionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isScraperFetchInFlightRef = useRef(false)
+  const isBannerFetchInFlightRef = useRef(false)
+  const hasLoadedBannerRef = useRef(false)
+  const bannerVersionRef = useRef<string>("")
   const hideStoryModalCloseButton =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("config") === "wob"
@@ -91,8 +105,12 @@ export function PublicHomePage() {
   }
 
   const fetchData = async () => {
+    if (isScraperFetchInFlightRef.current) return
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return
+
+    isScraperFetchInFlightRef.current = true
     try {
-      const res = await fetch('/api/scraper', { cache: "no-store" })
+      const res = await fetch('/api/scraper')
       const data = (await res.json()) as ScraperPayload
       setMachines(Array.isArray(data.data) ? data.data : (DEFAULT_MACHINES as RawMachineRecord[]))
       if (data.timestamp) {
@@ -101,24 +119,60 @@ export function PublicHomePage() {
     } catch (err) {
       console.error(err)
       setMachines(DEFAULT_MACHINES as RawMachineRecord[])
+    } finally {
+      isScraperFetchInFlightRef.current = false
     }
   }
 
   useEffect(() => {
-    fetchData()
-    const interval = setInterval(fetchData, 180000)
-    return () => clearInterval(interval)
+    void fetchData()
+    scraperIntervalRef.current = setInterval(() => {
+      void fetchData()
+    }, SCRAPER_REFRESH_MS)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void fetchData()
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      if (scraperIntervalRef.current) {
+        clearInterval(scraperIntervalRef.current)
+        scraperIntervalRef.current = null
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
   }, [])
 
   useEffect(() => {
     let stopped = false
 
-    const loadActiveBanners = async () => {
+    const syncActiveBanners = async () => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return
+      if (isBannerFetchInFlightRef.current) return
+
       try {
-        const response = await fetch("/api/banners/active", { cache: "no-store" })
+        const versionResponse = await fetch("/api/banners/version", { cache: "no-store" })
+        if (!versionResponse.ok) throw new Error(`Failed to load banner version (${versionResponse.status})`)
+
+        const versionPayload = (await versionResponse.json()) as BannerVersionResponse
+        if (stopped) return
+
+        const nextVersion = String(versionPayload.version ?? "").trim() || "v1"
+        const shouldRefetch = !hasLoadedBannerRef.current || bannerVersionRef.current !== nextVersion
+        if (!shouldRefetch) return
+
+        isBannerFetchInFlightRef.current = true
+        const response = await fetch(`/api/banners/active?v=${encodeURIComponent(nextVersion)}`)
         if (!response.ok) throw new Error(`Failed to load active banners (${response.status})`)
         const payload = (await response.json()) as ActiveBannerResponse
         if (stopped) return
+
+        bannerVersionRef.current = String(payload.version ?? nextVersion)
+        hasLoadedBannerRef.current = true
         const banners = Array.isArray(payload?.data) ? payload.data : []
         setActiveBanners(banners)
         setActiveBannerIndex((prev) => (banners.length === 0 ? 0 : Math.min(prev, banners.length - 1)))
@@ -127,13 +181,31 @@ export function PublicHomePage() {
         if (stopped) return
         setActiveBanners([])
         setActiveBannerIndex(0)
+      } finally {
+        isBannerFetchInFlightRef.current = false
       }
     }
 
-    void loadActiveBanners()
+    void syncActiveBanners()
+    bannerVersionIntervalRef.current = setInterval(() => {
+      void syncActiveBanners()
+    }, BANNER_VERSION_POLL_MS)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void syncActiveBanners()
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       stopped = true
+      if (bannerVersionIntervalRef.current) {
+        clearInterval(bannerVersionIntervalRef.current)
+        bannerVersionIntervalRef.current = null
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
       if (cooldownTimerRef.current) {
         clearTimeout(cooldownTimerRef.current)
         cooldownTimerRef.current = null
