@@ -62,12 +62,6 @@ type ActiveBanner = {
 type ActiveBannerResponse = {
   ok: boolean
   data?: ActiveBanner[]
-  version?: string
-}
-
-type BannerVersionResponse = {
-  ok: boolean
-  version?: string
 }
 
 const tabs = [
@@ -77,8 +71,7 @@ const tabs = [
 ]
 
 export function PublicHomePage() {
-  const SCRAPER_REFRESH_MS = 240000
-  const BANNER_VERSION_POLL_MS = 30000
+  const SCRAPER_REFRESH_MS = 300000
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
@@ -90,13 +83,10 @@ export function PublicHomePage() {
   const [isBannerCooldown, setIsBannerCooldown] = useState(false)
   const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scraperIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const bannerVersionIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isScraperFetchInFlightRef = useRef(false)
   const machineRefreshTimestampRef = useRef<string | null>(null)
   const machineEtagRef = useRef<string | null>(null)
   const isBannerFetchInFlightRef = useRef(false)
-  const hasLoadedBannerRef = useRef(false)
-  const bannerVersionRef = useRef<string>("")
   const hideStoryModalCloseButton =
     typeof window !== "undefined" &&
     new URLSearchParams(window.location.search).get("config") === "wob"
@@ -108,7 +98,7 @@ export function PublicHomePage() {
   const handleInfoClick = () => {
     notifications.show({
       title: 'Informasi',
-      message: 'Data diperbarui otomatis sekitar setiap 4 menit saat tab aktif',
+      message: 'Data diperbarui otomatis sekitar setiap 5 menit saat tab aktif',
       loading: false,
       autoClose: 2000,
     })
@@ -200,28 +190,15 @@ export function PublicHomePage() {
     let stopped = false
 
     const syncActiveBanners = async () => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return
       if (isBannerFetchInFlightRef.current) return
 
       try {
-        const versionResponse = await fetch("/api/banners/version", { cache: "no-store" })
-        if (!versionResponse.ok) throw new Error(`Failed to load banner version (${versionResponse.status})`)
-
-        const versionPayload = (await versionResponse.json()) as BannerVersionResponse
-        if (stopped) return
-
-        const nextVersion = String(versionPayload.version ?? "").trim() || "v1"
-        const shouldRefetch = !hasLoadedBannerRef.current || bannerVersionRef.current !== nextVersion
-        if (!shouldRefetch) return
-
         isBannerFetchInFlightRef.current = true
-        const response = await fetch(`/api/banners/active?v=${encodeURIComponent(nextVersion)}`)
+        const response = await fetch("/api/banners/active", { cache: "no-store" })
         if (!response.ok) throw new Error(`Failed to load active banners (${response.status})`)
         const payload = (await response.json()) as ActiveBannerResponse
         if (stopped) return
 
-        bannerVersionRef.current = String(payload.version ?? nextVersion)
-        hasLoadedBannerRef.current = true
         const banners = Array.isArray(payload?.data) ? payload.data : []
         setActiveBanners(banners)
         setActiveBannerIndex((prev) => (banners.length === 0 ? 0 : Math.min(prev, banners.length - 1)))
@@ -236,25 +213,9 @@ export function PublicHomePage() {
     }
 
     void syncActiveBanners()
-    bannerVersionIntervalRef.current = setInterval(() => {
-      void syncActiveBanners()
-    }, BANNER_VERSION_POLL_MS)
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        void syncActiveBanners()
-      }
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
       stopped = true
-      if (bannerVersionIntervalRef.current) {
-        clearInterval(bannerVersionIntervalRef.current)
-        bannerVersionIntervalRef.current = null
-      }
-      document.removeEventListener("visibilitychange", handleVisibilityChange)
       if (cooldownTimerRef.current) {
         clearTimeout(cooldownTimerRef.current)
         cooldownTimerRef.current = null

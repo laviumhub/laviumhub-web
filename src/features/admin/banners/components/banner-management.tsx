@@ -106,6 +106,8 @@ function sortActiveBanners(items: Banner[]): Banner[] {
 }
 
 export function BannerManagement() {
+  const machineCronIntervalMinutes = 10;
+  const machineFetchIntervalMinutes = 5;
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
@@ -491,6 +493,23 @@ export function BannerManagement() {
           </Button>
         </Group>
       </Group>
+
+      <Alert color="blue" variant="light" icon={<IconAlertCircle size={16} />}>
+        <Stack gap={2}>
+          <Text size="sm" fw={600}>
+            Update cadence
+          </Text>
+          <Text size="sm">
+            Banner publik dimuat saat page load (tanpa polling berkala).
+          </Text>
+          <Text size="sm">
+            Jika ada perubahan banner dan ingin langsung terapkan, pakai tombol Force Refresh Cache.
+          </Text>
+          <Text size="sm">
+            Info mesin: cron scrape server setiap {machineCronIntervalMinutes} menit, fetch status publik setiap {machineFetchIntervalMinutes} menit saat tab aktif.
+          </Text>
+        </Stack>
+      </Alert>
 
       <Alert color="yellow" variant="light" icon={<IconAlertCircle size={16} />}>
         Melakukan perintah ini akan menimbulkan cost komputasi.

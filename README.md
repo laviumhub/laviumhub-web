@@ -74,10 +74,10 @@ Apply:
 
 Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled to once every 4 minutes.
 
-### Scheduler (every 4 minutes)
+### Scheduler (every 10 minutes)
 
 This repo includes Netlify Scheduled Function:
-- `netlify/functions/machine-refresh-cron.js` (`*/4 * * * *`)
+- `netlify/functions/machine-refresh-cron.js` (`*/10 * * * *`)
 
 The scheduled function calls:
 - `POST /api/internal/machines/refresh`

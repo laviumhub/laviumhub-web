@@ -49,6 +49,8 @@ function statusColor(state: string): string {
 }
 
 export function MachineStatusManagement() {
+  const machineCronIntervalMinutes = 10;
+  const machineFetchIntervalMinutes = 5;
   const [rows, setRows] = useState<MachineStatusRow[]>([]);
   const [sourceTimestamp, setSourceTimestamp] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -147,6 +149,20 @@ export function MachineStatusManagement() {
           Force Refresh
         </Button>
       </Group>
+
+      <Alert color="blue" variant="light" icon={<IconAlertCircle size={16} />}>
+        <Stack gap={2}>
+          <Text size="sm" fw={600}>
+            Update cadence
+          </Text>
+          <Text size="sm">
+            Scheduler cron (server scrape): setiap {machineCronIntervalMinutes} menit.
+          </Text>
+          <Text size="sm">
+            Fetch status di halaman publik: setiap {machineFetchIntervalMinutes} menit saat tab aktif.
+          </Text>
+        </Stack>
+      </Alert>
 
       {errorMessage ? (
         <Alert color="red" icon={<IconAlertCircle size={16} />} variant="light">
