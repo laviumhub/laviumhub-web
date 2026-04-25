@@ -25,12 +25,10 @@ jobs:
       - name: Invoke Supabase Edge Function
         env:
           SUPABASE_PROJECT_URL: ${{ secrets.SUPABASE_PROJECT_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           MACHINE_REFRESH_CRON_SECRET: ${{ secrets.MACHINE_REFRESH_CRON_SECRET }}
         run: |
           set -euo pipefail
-          curl -sS -X POST "${SUPABASE_PROJECT_URL}/functions/v1/machine-refresh" \
-            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+          curl --fail-with-body -sS -X POST "${SUPABASE_PROJECT_URL}/functions/v1/machine-refresh" \
             -H "x-machine-refresh-secret: ${MACHINE_REFRESH_CRON_SECRET}" \
             -H "Content-Type: application/json" \
             -d '{}'

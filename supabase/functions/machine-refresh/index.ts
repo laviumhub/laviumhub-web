@@ -15,6 +15,12 @@ const DEFAULT_TIMEZONE = "Asia/Jakarta";
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 
+type SupabaseWriteConfig = {
+  url: string;
+  key: string;
+  keySource: "SUPABASE_SERVICE_ROLE_KEY" | "SUPABASE_DB_WRITE_KEY" | "SUPABASE_ANON_KEY";
+};
+
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
@@ -169,6 +175,43 @@ function isWithinLaviumSchedule(now: Date): boolean {
   return false;
 }
 
+function getSupabaseWriteConfig(): SupabaseWriteConfig {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const dbWriteKey = Deno.env.get("SUPABASE_DB_WRITE_KEY") ?? "";
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+  if (!supabaseUrl) {
+    throw new Error("Missing SUPABASE_URL.");
+  }
+
+  if (serviceRoleKey) {
+    return {
+      url: supabaseUrl,
+      key: serviceRoleKey,
+      keySource: "SUPABASE_SERVICE_ROLE_KEY",
+    };
+  }
+
+  if (dbWriteKey) {
+    return {
+      url: supabaseUrl,
+      key: dbWriteKey,
+      keySource: "SUPABASE_DB_WRITE_KEY",
+    };
+  }
+
+  if (anonKey) {
+    return {
+      url: supabaseUrl,
+      key: anonKey,
+      keySource: "SUPABASE_ANON_KEY",
+    };
+  }
+
+  throw new Error("Missing Supabase key. Set SUPABASE_SERVICE_ROLE_KEY (recommended) or SUPABASE_DB_WRITE_KEY.");
+}
+
 async function scrapeJagolinkMachineStatus(username: string, password: string): Promise<{
   machines: RawMachineRecord[];
   timestampIso: string;
@@ -270,19 +313,15 @@ Deno.serve(async (request: Request) => {
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const username = Deno.env.get("JAGOLINK_USERNAME");
     const password = Deno.env.get("JAGOLINK_PASSWORD");
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      return json({ ok: false, message: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY." }, 500);
-    }
+    const supabaseWriteConfig = getSupabaseWriteConfig();
     if (!username || !password) {
       return json({ ok: false, message: "Missing JAGOLINK_USERNAME or JAGOLINK_PASSWORD." }, 500);
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    const supabase = createClient(supabaseWriteConfig.url, supabaseWriteConfig.key, {
       auth: {
         persistSession: false,
         autoRefreshToken: false,
@@ -320,7 +359,19 @@ Deno.serve(async (request: Request) => {
     });
 
     if (rpcError) {
-      return json({ ok: false, message: `Failed to persist snapshot: ${rpcError.message}` }, 500);
+      return json(
+        {
+          ok: false,
+          message: `Failed to persist snapshot: ${rpcError.message}`,
+          details: {
+            code: rpcError.code ?? null,
+            hint: rpcError.hint ?? null,
+            details: rpcError.details ?? null,
+            keySource: supabaseWriteConfig.keySource,
+          },
+        },
+        500,
+      );
     }
 
     const rpcResponse = rpcData as { updated_count?: number }[] | { updated_count?: number } | null;
@@ -331,6 +382,7 @@ Deno.serve(async (request: Request) => {
       refreshed: true,
       updatedCount: Number(first?.updated_count ?? scrapeResult.machines.length),
       sourceTimestamp: scrapeResult.timestampIso,
+      keySource: supabaseWriteConfig.keySource,
       message: "Machine refresh completed via Supabase Edge Function.",
     });
   } catch (error) {

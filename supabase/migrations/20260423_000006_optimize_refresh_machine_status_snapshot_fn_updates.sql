@@ -50,9 +50,6 @@ begin
           status = excluded.status,
           state = excluded.state,
           source_timestamp = excluded.source_timestamp
-    where public.machine_status_latest.machine_name is distinct from excluded.machine_name
-       or public.machine_status_latest.status is distinct from excluded.status
-       or public.machine_status_latest.state is distinct from excluded.state
     returning 1
   )
   select count(*) into v_updated_count from upserted;

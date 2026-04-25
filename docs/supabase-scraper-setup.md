@@ -12,6 +12,7 @@ supabase functions deploy machine-refresh
 
 ```bash
 supabase secrets set \
+  SUPABASE_SERVICE_ROLE_KEY="..." \
   JAGOLINK_USERNAME="..." \
   JAGOLINK_PASSWORD="..." \
   MACHINE_REFRESH_CRON_SECRET="..."
