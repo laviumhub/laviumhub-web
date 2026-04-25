@@ -81,8 +81,20 @@ const tabs = [
   { key: 'antar-jemput', label: 'Antar Jemput'}
 ]
 
+function getJakartaWeekday(now: Date): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone: "Asia/Jakarta"
+  }).format(now)
+}
+
+function getMachineFetchIntervalMs(now: Date = new Date()): number {
+  const weekday = getJakartaWeekday(now)
+  const isMonThu = weekday === "Mon" || weekday === "Tue" || weekday === "Wed" || weekday === "Thu"
+  return isMonThu ? 10 * 60 * 1000 : 5 * 60 * 1000
+}
+
 export function PublicHomePage() {
-  const SCRAPER_REFRESH_MS = 300000
   const MIN_VISIBILITY_REFETCH_MS = 60000
   const BANNER_SESSION_CACHE_MS = 12 * 60 * 60 * 1000
   const MACHINE_STATUS_CACHE_KEY = "laviumhub:machine-status-cache:v1"
@@ -97,7 +109,7 @@ export function PublicHomePage() {
   const [bannerProgress, setBannerProgress] = useState(0)
   const [isBannerCooldown, setIsBannerCooldown] = useState(false)
   const cooldownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const scraperIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const scraperTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isScraperFetchInFlightRef = useRef(false)
   const machineRefreshTimestampRef = useRef<string | null>(null)
   const machineEtagRef = useRef<string | null>(null)
@@ -124,7 +136,7 @@ export function PublicHomePage() {
   const handleInfoClick = () => {
     notifications.show({
       title: 'Informasi',
-      message: 'Status mesin dicek tiap 5 menit saat tab aktif. Data server di-scrape tiap 30 menit (Senin 14:00-22:30, Selasa-Kamis 06:00-22:30).',
+      message: 'Status mesin dicek berkala saat tab aktif: Senin-Kamis tiap 10 menit, Jumat-Minggu tiap 5 menit.',
       loading: false,
       autoClose: 2000,
     })
@@ -214,8 +226,9 @@ export function PublicHomePage() {
         try {
           const parsed = JSON.parse(rawCache) as MachineStatusCachePayload
           const cacheAgeMs = Date.now() - Number(parsed.savedAt ?? 0)
+          const currentFetchIntervalMs = getMachineFetchIntervalMs()
           const cachedMachines = Array.isArray(parsed.machines) ? parsed.machines : null
-          if (cachedMachines && cacheAgeMs >= 0 && cacheAgeMs < SCRAPER_REFRESH_MS) {
+          if (cachedMachines && cacheAgeMs >= 0 && cacheAgeMs < currentFetchIntervalMs) {
             setMachines(cachedMachines)
             machinesRef.current = cachedMachines
             if (parsed.refreshTimestamp) {
@@ -235,9 +248,15 @@ export function PublicHomePage() {
       void fetchData()
     }
 
-    scraperIntervalRef.current = setInterval(() => {
-      void fetchData()
-    }, SCRAPER_REFRESH_MS)
+    const scheduleNextMachineFetch = () => {
+      const delayMs = getMachineFetchIntervalMs()
+      scraperTimerRef.current = setTimeout(() => {
+        void fetchData().finally(() => {
+          scheduleNextMachineFetch()
+        })
+      }, delayMs)
+    }
+    scheduleNextMachineFetch()
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
@@ -250,9 +269,9 @@ export function PublicHomePage() {
     document.addEventListener("visibilitychange", handleVisibilityChange)
 
     return () => {
-      if (scraperIntervalRef.current) {
-        clearInterval(scraperIntervalRef.current)
-        scraperIntervalRef.current = null
+      if (scraperTimerRef.current) {
+        clearTimeout(scraperTimerRef.current)
+        scraperTimerRef.current = null
       }
       document.removeEventListener("visibilitychange", handleVisibilityChange)
     }

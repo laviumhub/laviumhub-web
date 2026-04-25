@@ -3,7 +3,8 @@ import "server-only";
 import { scrapeJagolinkMachineStatus } from "@/features/scraper/server/jagolink-machine-scraper";
 import { getLatestMachineRefreshTimestampMs, saveMachineStatusSnapshot } from "@/features/machines/server/machine-status-store";
 
-const MIN_REFRESH_INTERVAL_MS = 30 * 60 * 1000;
+const TEN_MINUTES_MS = 10 * 60 * 1000;
+const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const DEFAULT_TIMEZONE = "Asia/Jakarta";
 const DEFAULT_START_HOUR = 6;
 const DEFAULT_END_HOUR = 23;
@@ -39,6 +40,13 @@ function getNowHourInTimeZone(now: Date, timeZone: string): number {
   return Number.isFinite(hour) ? hour : now.getUTCHours();
 }
 
+function getNowWeekdayInTimeZone(now: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    timeZone,
+  }).format(now);
+}
+
 function isWithinRefreshWindow(now: Date): boolean {
   const timeZone = process.env.MACHINE_REFRESH_TIMEZONE ?? DEFAULT_TIMEZONE;
   const startHour = getEnvNumber("MACHINE_REFRESH_START_HOUR", DEFAULT_START_HOUR);
@@ -46,6 +54,13 @@ function isWithinRefreshWindow(now: Date): boolean {
   const hour = getNowHourInTimeZone(now, timeZone);
 
   return hour >= startHour && hour < endHour;
+}
+
+function getMinRefreshIntervalMs(now: Date): number {
+  const timeZone = process.env.MACHINE_REFRESH_TIMEZONE ?? DEFAULT_TIMEZONE;
+  const weekday = getNowWeekdayInTimeZone(now, timeZone);
+  const isFriSatSun = weekday === "Fri" || weekday === "Sat" || weekday === "Sun";
+  return isFriSatSun ? TEN_MINUTES_MS : THIRTY_MINUTES_MS;
 }
 
 function getRequiredScraperCredentials(): { username: string; password: string } {
@@ -74,13 +89,15 @@ export async function refreshMachineStatuses(options?: {
     };
   }
 
+  const minRefreshIntervalMs = getMinRefreshIntervalMs(now);
   const latestRefreshMs = await getLatestMachineRefreshTimestampMs();
-  if (!force && latestRefreshMs && now.getTime() - latestRefreshMs < MIN_REFRESH_INTERVAL_MS) {
+  if (!force && latestRefreshMs && now.getTime() - latestRefreshMs < minRefreshIntervalMs) {
+    const intervalMinutes = Math.round(minRefreshIntervalMs / 60000);
     return {
       refreshed: false,
       reason: "throttled",
-      message: "Refresh dilewati karena belum melewati interval 30 menit.",
-      nextAllowedAt: new Date(latestRefreshMs + MIN_REFRESH_INTERVAL_MS).toISOString(),
+      message: `Refresh dilewati karena belum melewati interval ${intervalMinutes} menit.`,
+      nextAllowedAt: new Date(latestRefreshMs + minRefreshIntervalMs).toISOString(),
     };
   }
 

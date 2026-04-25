@@ -505,7 +505,7 @@ export function BannerManagement() {
             Jika ada perubahan banner dan ingin langsung terapkan, pakai tombol Force Refresh Cache.
           </Text>
           <Text size="sm">
-            Info mesin: cron scrape server Senin 14:00-22:30, Selasa-Kamis 06:00-22:30 (setiap 30 menit), fetch status publik setiap {machineFetchIntervalMinutes} menit saat tab aktif.
+            Info mesin: cron scrape via Supabase Senin 14:00-22:30 tiap 30 menit, Selasa-Kamis 06:00-22:30 tiap 30 menit, Jumat-Minggu 06:00-22:50 tiap 10 menit; fetch status publik Senin-Kamis tiap 10 menit, Jumat-Minggu tiap {machineFetchIntervalMinutes} menit saat tab aktif.
           </Text>
         </Stack>
       </Alert>

@@ -50,7 +50,6 @@ Required:
 Optional:
 - `SCRAPER_API_KEY` (if set, requests to `/api/scraper` must include `?key=...`)
 - `MACHINES_REFRESH_TOKEN` (required for admin force refresh)
-- `MACHINE_REFRESH_JOB_TOKEN` (required for scheduled/internal refresh job)
 - `MACHINE_REFRESH_TIMEZONE` (default `Asia/Jakarta`)
 - `MACHINE_REFRESH_START_HOUR` (default `6`)
 - `MACHINE_REFRESH_END_HOUR` (default `23`)
@@ -61,6 +60,7 @@ Apply:
 - `supabase/migrations/20260423_000004_create_machine_status_snapshots.sql`
 - `supabase/migrations/20260423_000005_create_machine_status_latest_and_refresh_fn.sql`
 - `supabase/migrations/20260423_000006_optimize_refresh_machine_status_snapshot_fn_updates.sql`
+- `supabase/migrations/20260425_000008_cleanup_machine_refresh_cron_jobs.sql` (optional cleanup if old cron jobs exist)
 
 ### Refresh endpoints
 
@@ -69,23 +69,20 @@ Apply:
 - Admin:
   - `GET /api/admin/machines/status`
   - `POST /api/admin/machines/refresh` (admin session + `MACHINES_REFRESH_TOKEN`)
-- Background/scheduler:
-  - `POST /api/internal/machines/refresh` with header `x-machine-refresh-token: <MACHINE_REFRESH_JOB_TOKEN>`
 
-Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled to once every 30 minutes.
+Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled by day:
+- Monday-Thursday: every 30 minutes
+- Friday-Sunday: every 10 minutes
 
-### Scheduler (every 30 minutes with day rules)
+### Scheduler (GitHub Actions -> Supabase Edge Function)
 
-This repo includes Netlify Scheduled Functions:
-- `netlify/functions/machine-refresh-cron.js` (`*/30 7-15 * * 1`) -> Monday 14:00-22:30 WIB
-- `netlify/functions/machine-refresh-cron-tue-thu-start.js` (`0,30 23 * * 1-3`) -> Tuesday-Thursday 06:00/06:30 WIB
-- `netlify/functions/machine-refresh-cron-tue-thu.js` (`*/30 0-15 * * 2-4`) -> Tuesday-Thursday 07:00-22:30 WIB
+Scheduler uses GitHub Actions to call Supabase Edge Function:
+- `.github/workflows/supabase-machine-refresh.yml`
 
-The scheduled function calls:
-- `POST /api/internal/machines/refresh`
+Use this guide:
+- `docs/supabase-scraper-setup.md`
 
-Refresh outside operational window is skipped by API logic, so safe to schedule all day.
-Note: Netlify Scheduled Functions cron expressions are evaluated in UTC.
+After cutover, Netlify scheduled functions are no longer used for machine scraping.
 
 ## Supabase env preparation
 

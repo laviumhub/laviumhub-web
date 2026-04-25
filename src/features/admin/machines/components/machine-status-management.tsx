@@ -155,10 +155,10 @@ export function MachineStatusManagement() {
             Update cadence
           </Text>
           <Text size="sm">
-            Scheduler cron (server scrape): Senin 14:00-22:30, Selasa-Kamis 06:00-22:30 (setiap 30 menit).
+            Scheduler cron (Supabase): Senin 14:00-22:30 tiap 30 menit, Selasa-Kamis 06:00-22:30 tiap 30 menit, Jumat-Minggu 06:00-22:50 tiap 10 menit.
           </Text>
           <Text size="sm">
-            Fetch status di halaman publik: setiap {machineFetchIntervalMinutes} menit saat tab aktif.
+            Fetch status di halaman publik: Senin-Kamis tiap 10 menit, Jumat-Minggu tiap {machineFetchIntervalMinutes} menit saat tab aktif.
           </Text>
         </Stack>
       </Alert>
