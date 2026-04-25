@@ -83,6 +83,7 @@ const tabs = [
 
 export function PublicHomePage() {
   const SCRAPER_REFRESH_MS = 300000
+  const MIN_VISIBILITY_REFETCH_MS = 60000
   const BANNER_SESSION_CACHE_MS = 12 * 60 * 60 * 1000
   const MACHINE_STATUS_CACHE_KEY = "laviumhub:machine-status-cache:v1"
   const ACTIVE_BANNERS_CACHE_KEY = "laviumhub:active-banners-cache:v1"
@@ -101,6 +102,8 @@ export function PublicHomePage() {
   const machineRefreshTimestampRef = useRef<string | null>(null)
   const machineEtagRef = useRef<string | null>(null)
   const machinesRef = useRef<RawMachineRecord[]>(DEFAULT_MACHINES as RawMachineRecord[])
+  const activeTabRef = useRef<AppTabKey>('informasi')
+  const lastMachineFetchAtRef = useRef(0)
   const isBannerFetchInFlightRef = useRef(false)
   const hideStoryModalCloseButton =
     typeof window !== "undefined" &&
@@ -114,6 +117,10 @@ export function PublicHomePage() {
     machinesRef.current = machines
   }, [machines])
 
+  useEffect(() => {
+    activeTabRef.current = activeTab
+  }, [activeTab])
+
   const handleInfoClick = () => {
     notifications.show({
       title: 'Informasi',
@@ -125,6 +132,7 @@ export function PublicHomePage() {
 
   const fetchData = async () => {
     if (isScraperFetchInFlightRef.current) return
+    if (activeTabRef.current !== "informasi") return
     if (typeof document !== "undefined" && document.visibilityState !== "visible") return
 
     isScraperFetchInFlightRef.current = true
@@ -142,7 +150,10 @@ export function PublicHomePage() {
           : undefined
       })
 
-      if (response.status === 304) return
+      if (response.status === 304) {
+        lastMachineFetchAtRef.current = Date.now()
+        return
+      }
       const etag = response.headers.get("etag")
       if (etag) {
         machineEtagRef.current = etag
@@ -187,6 +198,7 @@ export function PublicHomePage() {
         }
         window.sessionStorage.setItem(MACHINE_STATUS_CACHE_KEY, JSON.stringify(cachePayload))
       }
+      lastMachineFetchAtRef.current = Date.now()
     } catch (err) {
       console.error(err)
       setMachines(DEFAULT_MACHINES as RawMachineRecord[])
@@ -229,6 +241,8 @@ export function PublicHomePage() {
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
+        const elapsedSinceLastFetch = Date.now() - lastMachineFetchAtRef.current
+        if (elapsedSinceLastFetch < MIN_VISIBILITY_REFETCH_MS) return
         void fetchData()
       }
     }

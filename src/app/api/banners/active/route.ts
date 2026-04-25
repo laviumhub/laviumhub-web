@@ -4,13 +4,34 @@ import {
   ensureBannerFingerprintInitialized,
   getBannerCacheVersion,
 } from "@/features/admin/banners/server/banner-cache-version";
-import { getActiveBanners } from "@/features/admin/banners/server/banner-service";
+import type { Banner } from "@/features/admin/banners/types";
+import { getSupabaseServerClient } from "@/lib/supabase/server-client";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const CACHE_CONTROL_HEADER = "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400";
 const FORCE_REFRESH_CACHE_CONTROL_HEADER = "no-store, max-age=0";
+
+async function getActiveBannersForPublic(): Promise<Banner[]> {
+  const supabase = getSupabaseServerClient();
+  const nowIso = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("banners")
+    .select("id,title,description,image_url,is_active,active_order,start_at,end_at,created_at,updated_at")
+    .eq("is_active", true)
+    .lte("start_at", nowIso)
+    .or(`end_at.is.null,end_at.gte.${nowIso}`)
+    .order("active_order", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: true });
+
+  if (error) {
+    throw new Error(`Failed to fetch active banners: ${error.message}`);
+  }
+
+  return (data ?? []) as Banner[];
+}
 
 function resolveForceRefresh(request: Request): { requested: boolean; allowed: boolean } {
   const { searchParams } = new URL(request.url);
@@ -41,7 +62,7 @@ export async function GET(request: Request) {
   const cacheControl = forceRefresh.allowed ? FORCE_REFRESH_CACHE_CONTROL_HEADER : CACHE_CONTROL_HEADER;
 
   try {
-    const banners = await getActiveBanners();
+    const banners = await getActiveBannersForPublic();
     ensureBannerFingerprintInitialized(banners);
     const version = getBannerCacheVersion();
     return NextResponse.json(
