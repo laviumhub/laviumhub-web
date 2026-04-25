@@ -106,7 +106,6 @@ function sortActiveBanners(items: Banner[]): Banner[] {
 }
 
 export function BannerManagement() {
-  const machineCronIntervalMinutes = 10;
   const machineFetchIntervalMinutes = 5;
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -506,7 +505,7 @@ export function BannerManagement() {
             Jika ada perubahan banner dan ingin langsung terapkan, pakai tombol Force Refresh Cache.
           </Text>
           <Text size="sm">
-            Info mesin: cron scrape server setiap {machineCronIntervalMinutes} menit, fetch status publik setiap {machineFetchIntervalMinutes} menit saat tab aktif.
+            Info mesin: cron scrape server Senin 14:00-22:30, Selasa-Kamis 06:00-22:30 (setiap 30 menit), fetch status publik setiap {machineFetchIntervalMinutes} menit saat tab aktif.
           </Text>
         </Stack>
       </Alert>

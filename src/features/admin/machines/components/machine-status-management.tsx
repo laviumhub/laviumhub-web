@@ -49,7 +49,6 @@ function statusColor(state: string): string {
 }
 
 export function MachineStatusManagement() {
-  const machineCronIntervalMinutes = 10;
   const machineFetchIntervalMinutes = 5;
   const [rows, setRows] = useState<MachineStatusRow[]>([]);
   const [sourceTimestamp, setSourceTimestamp] = useState<string | null>(null);
@@ -156,7 +155,7 @@ export function MachineStatusManagement() {
             Update cadence
           </Text>
           <Text size="sm">
-            Scheduler cron (server scrape): setiap {machineCronIntervalMinutes} menit.
+            Scheduler cron (server scrape): Senin 14:00-22:30, Selasa-Kamis 06:00-22:30 (setiap 30 menit).
           </Text>
           <Text size="sm">
             Fetch status di halaman publik: setiap {machineFetchIntervalMinutes} menit saat tab aktif.

@@ -72,17 +72,20 @@ Apply:
 - Background/scheduler:
   - `POST /api/internal/machines/refresh` with header `x-machine-refresh-token: <MACHINE_REFRESH_JOB_TOKEN>`
 
-Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled to once every 10 minutes.
+Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled to once every 30 minutes.
 
-### Scheduler (every 10 minutes)
+### Scheduler (every 30 minutes with day rules)
 
-This repo includes Netlify Scheduled Function:
-- `netlify/functions/machine-refresh-cron.js` (`*/10 * * * *`)
+This repo includes Netlify Scheduled Functions:
+- `netlify/functions/machine-refresh-cron.js` (`*/30 7-15 * * 1`) -> Monday 14:00-22:30 WIB
+- `netlify/functions/machine-refresh-cron-tue-thu-start.js` (`0,30 23 * * 1-3`) -> Tuesday-Thursday 06:00/06:30 WIB
+- `netlify/functions/machine-refresh-cron-tue-thu.js` (`*/30 0-15 * * 2-4`) -> Tuesday-Thursday 07:00-22:30 WIB
 
 The scheduled function calls:
 - `POST /api/internal/machines/refresh`
 
 Refresh outside operational window is skipped by API logic, so safe to schedule all day.
+Note: Netlify Scheduled Functions cron expressions are evaluated in UTC.
 
 ## Supabase env preparation
 

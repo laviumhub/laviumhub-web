@@ -124,7 +124,7 @@ export function PublicHomePage() {
   const handleInfoClick = () => {
     notifications.show({
       title: 'Informasi',
-      message: 'Data diperbarui otomatis sekitar setiap 5 menit saat tab aktif',
+      message: 'Status mesin dicek tiap 5 menit saat tab aktif. Data server di-scrape tiap 30 menit (Senin 14:00-22:30, Selasa-Kamis 06:00-22:30).',
       loading: false,
       autoClose: 2000,
     })
