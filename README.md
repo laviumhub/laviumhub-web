@@ -72,7 +72,7 @@ Apply:
 - Background/scheduler:
   - `POST /api/internal/machines/refresh` with header `x-machine-refresh-token: <MACHINE_REFRESH_JOB_TOKEN>`
 
-Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled to once every 4 minutes.
+Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled to once every 10 minutes.
 
 ### Scheduler (every 10 minutes)
 

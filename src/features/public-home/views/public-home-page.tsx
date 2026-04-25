@@ -64,6 +64,17 @@ type ActiveBannerResponse = {
   data?: ActiveBanner[]
 }
 
+type MachineStatusCachePayload = {
+  savedAt: number
+  refreshTimestamp: string | null
+  machines: RawMachineRecord[]
+}
+
+type ActiveBannerCachePayload = {
+  savedAt: number
+  banners: ActiveBanner[]
+}
+
 const tabs = [
   { key: 'informasi', label: 'Informasi'},
   { key: 'layanan', label: 'Layanan'},
@@ -72,6 +83,9 @@ const tabs = [
 
 export function PublicHomePage() {
   const SCRAPER_REFRESH_MS = 300000
+  const BANNER_SESSION_CACHE_MS = 12 * 60 * 60 * 1000
+  const MACHINE_STATUS_CACHE_KEY = "laviumhub:machine-status-cache:v1"
+  const ACTIVE_BANNERS_CACHE_KEY = "laviumhub:active-banners-cache:v1"
   const isMobile = useMediaQuery('(max-width: 768px)')
   const [activeTab, setActiveTab] = useState<AppTabKey>('informasi')
   const [lastUpdate, setLastUpdate] = useState<string | null>(null)
@@ -86,6 +100,7 @@ export function PublicHomePage() {
   const isScraperFetchInFlightRef = useRef(false)
   const machineRefreshTimestampRef = useRef<string | null>(null)
   const machineEtagRef = useRef<string | null>(null)
+  const machinesRef = useRef<RawMachineRecord[]>(DEFAULT_MACHINES as RawMachineRecord[])
   const isBannerFetchInFlightRef = useRef(false)
   const hideStoryModalCloseButton =
     typeof window !== "undefined" &&
@@ -94,6 +109,10 @@ export function PublicHomePage() {
 
   const total = machines.length
   const available = machines.filter((m) => m.state === "MATI").length
+
+  useEffect(() => {
+    machinesRef.current = machines
+  }, [machines])
 
   const handleInfoClick = () => {
     notifications.show({
@@ -136,9 +155,9 @@ export function PublicHomePage() {
         (Array.isArray(data.data) ? data.data : []).map((row) => [row.device_id, row] as const)
       )
 
-      if (statusMap.size > 0) {
-        setMachines((prev) =>
-          prev.map((machine) => {
+      const currentMachines = machinesRef.current
+      const nextMachines = statusMap.size > 0
+        ? currentMachines.map((machine) => {
             const latest = statusMap.get(machine.device_id)
             if (!latest) return machine
 
@@ -148,12 +167,25 @@ export function PublicHomePage() {
               state: latest.state ?? machine.state
             } satisfies RawMachineRecord
           })
-        )
+        : currentMachines
+
+      if (statusMap.size > 0) {
+        setMachines(nextMachines)
       }
 
+      const refreshTimestamp = data.refresh_timestamp ?? null
       if (data.refresh_timestamp) {
         machineRefreshTimestampRef.current = data.refresh_timestamp
         setLastUpdate(dayjs(data.refresh_timestamp).format('DD MMMM YYYY HH:mm:ss'))
+      }
+
+      if (typeof window !== "undefined") {
+        const cachePayload: MachineStatusCachePayload = {
+          savedAt: Date.now(),
+          refreshTimestamp,
+          machines: nextMachines
+        }
+        window.sessionStorage.setItem(MACHINE_STATUS_CACHE_KEY, JSON.stringify(cachePayload))
       }
     } catch (err) {
       console.error(err)
@@ -164,7 +196,33 @@ export function PublicHomePage() {
   }
 
   useEffect(() => {
-    void fetchData()
+    if (typeof window !== "undefined") {
+      const rawCache = window.sessionStorage.getItem(MACHINE_STATUS_CACHE_KEY)
+      if (rawCache) {
+        try {
+          const parsed = JSON.parse(rawCache) as MachineStatusCachePayload
+          const cacheAgeMs = Date.now() - Number(parsed.savedAt ?? 0)
+          const cachedMachines = Array.isArray(parsed.machines) ? parsed.machines : null
+          if (cachedMachines && cacheAgeMs >= 0 && cacheAgeMs < SCRAPER_REFRESH_MS) {
+            setMachines(cachedMachines)
+            machinesRef.current = cachedMachines
+            if (parsed.refreshTimestamp) {
+              machineRefreshTimestampRef.current = parsed.refreshTimestamp
+              setLastUpdate(dayjs(parsed.refreshTimestamp).format('DD MMMM YYYY HH:mm:ss'))
+            }
+          } else {
+            void fetchData()
+          }
+        } catch {
+          void fetchData()
+        }
+      } else {
+        void fetchData()
+      }
+    } else {
+      void fetchData()
+    }
+
     scraperIntervalRef.current = setInterval(() => {
       void fetchData()
     }, SCRAPER_REFRESH_MS)
@@ -193,8 +251,26 @@ export function PublicHomePage() {
       if (isBannerFetchInFlightRef.current) return
 
       try {
+        if (typeof window !== "undefined") {
+          const rawCache = window.sessionStorage.getItem(ACTIVE_BANNERS_CACHE_KEY)
+          if (rawCache) {
+            try {
+              const parsed = JSON.parse(rawCache) as ActiveBannerCachePayload
+              const cacheAgeMs = Date.now() - Number(parsed.savedAt ?? 0)
+              const cachedBanners = Array.isArray(parsed.banners) ? parsed.banners : null
+              if (cachedBanners && cacheAgeMs >= 0 && cacheAgeMs < BANNER_SESSION_CACHE_MS) {
+                setActiveBanners(cachedBanners)
+                setActiveBannerIndex((prev) => (cachedBanners.length === 0 ? 0 : Math.min(prev, cachedBanners.length - 1)))
+                return
+              }
+            } catch {
+              window.sessionStorage.removeItem(ACTIVE_BANNERS_CACHE_KEY)
+            }
+          }
+        }
+
         isBannerFetchInFlightRef.current = true
-        const response = await fetch("/api/banners/active", { cache: "no-store" })
+        const response = await fetch("/api/banners/active", { cache: "force-cache" })
         if (!response.ok) throw new Error(`Failed to load active banners (${response.status})`)
         const payload = (await response.json()) as ActiveBannerResponse
         if (stopped) return
@@ -202,6 +278,13 @@ export function PublicHomePage() {
         const banners = Array.isArray(payload?.data) ? payload.data : []
         setActiveBanners(banners)
         setActiveBannerIndex((prev) => (banners.length === 0 ? 0 : Math.min(prev, banners.length - 1)))
+        if (typeof window !== "undefined") {
+          const cachePayload: ActiveBannerCachePayload = {
+            savedAt: Date.now(),
+            banners
+          }
+          window.sessionStorage.setItem(ACTIVE_BANNERS_CACHE_KEY, JSON.stringify(cachePayload))
+        }
       } catch (error) {
         console.error(error)
         if (stopped) return

@@ -3,7 +3,7 @@ import "server-only";
 import { scrapeJagolinkMachineStatus } from "@/features/scraper/server/jagolink-machine-scraper";
 import { getLatestMachineRefreshTimestampMs, saveMachineStatusSnapshot } from "@/features/machines/server/machine-status-store";
 
-const MIN_REFRESH_INTERVAL_MS = 4 * 60 * 1000;
+const MIN_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 const DEFAULT_TIMEZONE = "Asia/Jakarta";
 const DEFAULT_START_HOUR = 6;
 const DEFAULT_END_HOUR = 23;
@@ -79,7 +79,7 @@ export async function refreshMachineStatuses(options?: {
     return {
       refreshed: false,
       reason: "throttled",
-      message: "Refresh dilewati karena belum melewati interval 4 menit.",
+      message: "Refresh dilewati karena belum melewati interval 10 menit.",
       nextAllowedAt: new Date(latestRefreshMs + MIN_REFRESH_INTERVAL_MS).toISOString(),
     };
   }

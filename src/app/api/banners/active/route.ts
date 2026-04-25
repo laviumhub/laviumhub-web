@@ -9,7 +9,7 @@ import { getActiveBanners } from "@/features/admin/banners/server/banner-service
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CACHE_CONTROL_HEADER = "public, s-maxage=604800, stale-while-revalidate=86400";
+const CACHE_CONTROL_HEADER = "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400";
 const FORCE_REFRESH_CACHE_CONTROL_HEADER = "no-store, max-age=0";
 
 function resolveForceRefresh(request: Request): { requested: boolean; allowed: boolean } {

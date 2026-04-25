@@ -10,7 +10,7 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const CACHE_CONTROL_HEADER = "public, s-maxage=30, stale-while-revalidate=60";
+const CACHE_CONTROL_HEADER = "public, max-age=300, s-maxage=300, stale-while-revalidate=600";
 
 function isValidIsoDate(value: string): boolean {
   return !Number.isNaN(new Date(value).getTime());
