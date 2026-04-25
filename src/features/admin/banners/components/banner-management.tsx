@@ -511,10 +511,6 @@ export function BannerManagement() {
         </Stack>
       </Alert>
 
-      <Alert color="yellow" variant="light" icon={<IconAlertCircle size={16} />}>
-        Melakukan perintah ini akan menimbulkan cost komputasi.
-      </Alert>
-
       {errorMessage ? (
         <Alert color="red" icon={<IconAlertCircle size={16} />} variant="light">
           {errorMessage}
