@@ -106,7 +106,7 @@ function sortActiveBanners(items: Banner[]): Banner[] {
 }
 
 export function BannerManagement() {
-  const machineFetchIntervalMinutes = 5;
+  const machineFetchIntervalMinutes = 10;
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isMutating, setIsMutating] = useState(false);
@@ -505,7 +505,7 @@ export function BannerManagement() {
             Jika ada perubahan banner dan ingin langsung terapkan, pakai tombol Force Refresh Cache.
           </Text>
           <Text size="sm">
-            Info mesin: cron scrape via Supabase Senin 14:00-22:30 tiap 30 menit, Selasa-Kamis 06:00-22:30 tiap 30 menit, Jumat-Minggu 06:00-22:50 tiap 10 menit; fetch status publik Senin-Kamis tiap 10 menit, Jumat-Minggu tiap {machineFetchIntervalMinutes} menit saat tab aktif.
+            Info mesin: scheduler GitHub jalan tiap 10 menit; scrape server dibatasi jam operasional (Senin 14:30-21:59 WIB, Selasa-Minggu 07:00-21:59 WIB); fetch status publik saat tab aktif tiap {machineFetchIntervalMinutes} menit.
           </Text>
         </Stack>
       </Alert>

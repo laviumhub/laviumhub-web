@@ -13,7 +13,9 @@ const TARGET_URL = "https://jagolink.id/others/iot-machine";
 const USER_AGENT = "Mozilla/5.0 (compatible; LaviumHubSupabaseScraper/1.0)";
 const DEFAULT_TIMEZONE = "Asia/Jakarta";
 const TEN_MINUTES_MS = 10 * 60 * 1000;
-const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const DAILY_START_MINUTES = 7 * 60; // 07:00 WIB
+const DAILY_END_MINUTES = 22 * 60; // 22:00 WIB (exclusive)
+const MONDAY_START_MINUTES = 14 * 60 + 30; // 14:30 WIB
 
 type SupabaseWriteConfig = {
   url: string;
@@ -143,35 +145,47 @@ function parseMachinesFromHtml(html: string): RawMachineRecord[] {
   return machines;
 }
 
-function getJakartaDayAndHour(now: Date): { day: string; hour: number } {
+function getJakartaDayHourMinute(now: Date): { day: string; hour: number; minute: number } {
   const day = new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     timeZone: DEFAULT_TIMEZONE,
   }).format(now);
 
-  const hourText = new Intl.DateTimeFormat("en-US", {
+  const timeText = new Intl.DateTimeFormat("en-US", {
     hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
     timeZone: DEFAULT_TIMEZONE,
   }).format(now);
-  const hour = Number.parseInt(hourText, 10);
+
+  const [hourText, minuteText] = timeText.split(":");
+  const hour = Number.parseInt(hourText ?? "", 10);
+  const minute = Number.parseInt(minuteText ?? "", 10);
+
   return {
     day,
     hour: Number.isFinite(hour) ? hour : now.getUTCHours(),
+    minute: Number.isFinite(minute) ? minute : now.getUTCMinutes(),
   };
 }
 
-function getMinRefreshIntervalMsByDay(now: Date): number {
-  const { day } = getJakartaDayAndHour(now);
-  const isFriSatSun = day === "Fri" || day === "Sat" || day === "Sun";
-  return isFriSatSun ? TEN_MINUTES_MS : THIRTY_MINUTES_MS;
+function getMinRefreshIntervalMs(): number {
+  return TEN_MINUTES_MS;
+}
+
+function getMinutesSinceMidnight(hour: number, minute: number): number {
+  return hour * 60 + minute;
 }
 
 function isWithinLaviumSchedule(now: Date): boolean {
-  const { day, hour } = getJakartaDayAndHour(now);
-  if (day === "Mon") return hour >= 14 && hour < 23;
-  if (day === "Tue" || day === "Wed" || day === "Thu") return hour >= 6 && hour < 23;
-  if (day === "Fri" || day === "Sat" || day === "Sun") return hour >= 6 && hour < 23;
+  const { day, hour, minute } = getJakartaDayHourMinute(now);
+  const minutes = getMinutesSinceMidnight(hour, minute);
+
+  if (day === "Mon") return minutes >= MONDAY_START_MINUTES && minutes < DAILY_END_MINUTES;
+  if (day === "Tue" || day === "Wed" || day === "Thu" || day === "Fri" || day === "Sat" || day === "Sun") {
+    return minutes >= DAILY_START_MINUTES && minutes < DAILY_END_MINUTES;
+  }
+
   return false;
 }
 
@@ -339,7 +353,7 @@ Deno.serve(async (request: Request) => {
       return json({ ok: false, message: `Failed to read latest timestamp: ${latestError.message}` }, 500);
     }
 
-    const minRefreshIntervalMs = getMinRefreshIntervalMsByDay(now);
+    const minRefreshIntervalMs = getMinRefreshIntervalMs();
     if (latestData?.source_timestamp) {
       const latestMs = new Date(String(latestData.source_timestamp)).getTime();
       if (Number.isFinite(latestMs) && now.getTime() - latestMs < minRefreshIntervalMs) {

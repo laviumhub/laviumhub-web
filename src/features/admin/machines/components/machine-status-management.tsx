@@ -49,7 +49,7 @@ function statusColor(state: string): string {
 }
 
 export function MachineStatusManagement() {
-  const machineFetchIntervalMinutes = 5;
+  const machineFetchIntervalMinutes = 10;
   const [rows, setRows] = useState<MachineStatusRow[]>([]);
   const [sourceTimestamp, setSourceTimestamp] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -155,10 +155,13 @@ export function MachineStatusManagement() {
             Update cadence
           </Text>
           <Text size="sm">
-            Scheduler cron (Supabase): Senin 14:00-22:30 tiap 30 menit, Selasa-Kamis 06:00-22:30 tiap 30 menit, Jumat-Minggu 06:00-22:50 tiap 10 menit.
+            Scheduler cron (GitHub Actions): tiap 10 menit.
           </Text>
           <Text size="sm">
-            Fetch status di halaman publik: Senin-Kamis tiap 10 menit, Jumat-Minggu tiap {machineFetchIntervalMinutes} menit saat tab aktif.
+            Eksekusi scrape di Supabase hanya saat jam operasional: Senin 14:30-21:59 WIB, Selasa-Minggu 07:00-21:59 WIB.
+          </Text>
+          <Text size="sm">
+            Fetch status di halaman publik saat tab aktif: tiap {machineFetchIntervalMinutes} menit.
           </Text>
         </Stack>
       </Alert>

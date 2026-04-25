@@ -81,17 +81,8 @@ const tabs = [
   { key: 'antar-jemput', label: 'Antar Jemput'}
 ]
 
-function getJakartaWeekday(now: Date): string {
-  return new Intl.DateTimeFormat("en-US", {
-    weekday: "short",
-    timeZone: "Asia/Jakarta"
-  }).format(now)
-}
-
-function getMachineFetchIntervalMs(now: Date = new Date()): number {
-  const weekday = getJakartaWeekday(now)
-  const isMonThu = weekday === "Mon" || weekday === "Tue" || weekday === "Wed" || weekday === "Thu"
-  return isMonThu ? 10 * 60 * 1000 : 5 * 60 * 1000
+function getMachineFetchIntervalMs(): number {
+  return 10 * 60 * 1000
 }
 
 export function PublicHomePage() {
@@ -136,7 +127,7 @@ export function PublicHomePage() {
   const handleInfoClick = () => {
     notifications.show({
       title: 'Informasi',
-      message: 'Status mesin dicek berkala saat tab aktif: Senin-Kamis tiap 10 menit, Jumat-Minggu tiap 5 menit.',
+      message: 'Status mesin dicek berkala tiap 10 menit saat tab aktif. Scrape server tetap dibatasi jam operasional.',
       loading: false,
       autoClose: 2000,
     })

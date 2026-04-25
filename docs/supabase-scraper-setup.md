@@ -23,8 +23,7 @@ supabase secrets set \
 Di repo GitHub: `Settings -> Secrets and variables -> Actions`, buat:
 
 1. `SUPABASE_PROJECT_URL` (contoh: `https://<PROJECT_REF>.supabase.co`)
-2. `SUPABASE_ANON_KEY` (publishable key)
-3. `MACHINE_REFRESH_CRON_SECRET` (harus sama dengan Supabase secret)
+2. `MACHINE_REFRESH_CRON_SECRET` (harus sama dengan Supabase secret)
 
 ## 4) Scheduler
 
@@ -34,9 +33,10 @@ Workflow sudah tersedia:
 
 Jadwal (WIB):
 
-1. Senin 14:00-22:30 tiap 30 menit
-2. Selasa-Kamis 06:00-22:30 tiap 30 menit
-3. Jumat-Minggu 06:00-22:50 tiap 10 menit
+1. Scheduler GitHub trigger tiap 10 menit.
+2. Validasi waktu scrape di Supabase function:
+   - Senin 14:30-21:59 WIB
+   - Selasa-Minggu 07:00-21:59 WIB
 
 ## 5) Test cepat
 
@@ -45,12 +45,6 @@ Jadwal (WIB):
 3. Klik `Run workflow`.
 4. Cek tabel `machine_status_latest` di Supabase.
 
-## 6) Cleanup Supabase cron lama (opsional)
-
-Jika sebelumnya sempat buat SQL cron jobs, jalankan:
-
-- `supabase/migrations/20260425_000008_cleanup_machine_refresh_cron_jobs.sql`
-
-## 7) Catatan deploy Netlify
+## 6) Catatan deploy Netlify
 
 Deploy Next.js ke Netlify tetap normal saat merge ke `main`, tetapi scraping tidak lagi bergantung pada Netlify scheduler.

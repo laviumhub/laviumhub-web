@@ -60,7 +60,6 @@ Apply:
 - `supabase/migrations/20260423_000004_create_machine_status_snapshots.sql`
 - `supabase/migrations/20260423_000005_create_machine_status_latest_and_refresh_fn.sql`
 - `supabase/migrations/20260423_000006_optimize_refresh_machine_status_snapshot_fn_updates.sql`
-- `supabase/migrations/20260425_000008_cleanup_machine_refresh_cron_jobs.sql` (optional cleanup if old cron jobs exist)
 
 ### Refresh endpoints
 
@@ -70,9 +69,9 @@ Apply:
   - `GET /api/admin/machines/status`
   - `POST /api/admin/machines/refresh` (admin session + `MACHINES_REFRESH_TOKEN`)
 
-Refresh is automatically skipped outside configured window (`06:00 - 23:00` by default), and throttled by day:
-- Monday-Thursday: every 30 minutes
-- Friday-Sunday: every 10 minutes
+Refresh is automatically skipped outside operational windows and throttled every 10 minutes:
+- Monday: `14:30 - 21:59` WIB
+- Tuesday-Sunday: `07:00 - 21:59` WIB
 
 ### Scheduler (GitHub Actions -> Supabase Edge Function)
 
